@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Delhi Sales Dashboard YTD 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f3;color:#0b0b0b;min-height:100vh}
+  .header{background:#fff;border-bottom:1px solid #e5e5e2;padding:20px 32px;display:flex;align-items:center;gap:16px}
+  .logo{width:32px;height:32px;background:#d4502a;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0}
+  .header-text h1{font-size:18px;font-weight:600;color:#0b0b0b}
+  .header-text p{font-size:13px;color:#6b6a66;margin-top:2px}
+  .search-section{padding:32px 32px 0;max-width:900px;margin:0 auto}
+  .search-wrap{position:relative}
+  .search-wrap svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#6b6a66;pointer-events:none}
+  #searchInput{width:100%;padding:12px 14px 12px 44px;font-size:15px;border:1.5px solid #d9d8d3;border-radius:10px;background:#fff;outline:none;transition:border-color .15s}
+  #searchInput:focus{border-color:#2a78d6}
+  #suggestions{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid #e5e5e2;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.08);z-index:100;max-height:280px;overflow-y:auto;display:none}
+  .suggestion-item{padding:10px 16px;cursor:pointer;font-size:14px;border-bottom:1px solid #f0efec;transition:background .1s}
+  .suggestion-item:last-child{border-bottom:none}
+  .suggestion-item:hover{background:#f5f5f3}
+  .suggestion-item strong{color:#0b0b0b}
+  .suggestion-item span{color:#6b6a66;font-size:12px;margin-left:6px}
+  .main{padding:24px 32px 48px;max-width:900px;margin:0 auto}
+  .empty-state{text-align:center;padding:80px 0;color:#6b6a66}
+  .empty-state h2{font-size:20px;font-weight:500;color:#0b0b0b;margin-bottom:8px}
+  .empty-state p{font-size:14px}
+  .outlet-header{background:#fff;border:1px solid #e5e5e2;border-radius:12px;padding:20px 24px;margin-bottom:20px}
+  .outlet-name{font-size:20px;font-weight:600;margin-bottom:6px}
+  .outlet-meta{display:flex;flex-wrap:wrap;gap:8px}
+  .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500}
+  .badge-active{background:#eaf3de;color:#3b6d11}
+  .badge-closed{background:#fcebeb;color:#a32d2d}
+  .badge-billing{background:#faeeda;color:#854f0b}
+  .badge-temp{background:#e6f1fb;color:#185fa5}
+  .badge-inactive{background:#f1f0e8;color:#5f5e5a}
+  .badge-channel{background:#eeedfe;color:#3c3489}
+  .badge-rm{background:#f1f0e8;color:#444441}
+  .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px}
+  .kpi-card{background:#fff;border:1px solid #e5e5e2;border-radius:10px;padding:14px 16px}
+  .kpi-label{font-size:11px;color:#898781;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+  .kpi-value{font-size:24px;font-weight:600;color:#0b0b0b;line-height:1}
+  .kpi-sub{font-size:11px;color:#6b6a66;margin-top:4px}
+  .charts-grid{display:grid;gap:16px}
+  .chart-card{background:#fff;border:1px solid #e5e5e2;border-radius:12px;padding:20px 24px}
+  .chart-title{font-size:14px;font-weight:500;color:#0b0b0b;margin-bottom:4px}
+  .chart-sub{font-size:12px;color:#898781;margin-bottom:16px}
+  .legend{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px}
+  .legend-item{display:flex;align-items:center;gap:5px;font-size:12px;color:#52514e}
+  .legend-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+  .monthly-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px}
+  .monthly-table th{font-size:11px;color:#898781;font-weight:500;padding:6px 10px;text-align:right;border-bottom:1px solid #e5e5e2}
+  .monthly-table th:first-child{text-align:left}
+  .monthly-table td{padding:8px 10px;border-bottom:1px solid #f0efec;text-align:right;color:#0b0b0b}
+  .monthly-table td:first-child{text-align:left;font-weight:500;color:#52514e}
+  .monthly-table tr:last-child td{border-bottom:none;font-weight:600;color:#0b0b0b;background:#f9f9f7}
+  .trend-badge{display:inline-block;font-size:11px;padding:2px 6px;border-radius:4px;margin-left:4px}
+  .trend-up{background:#eaf3de;color:#3b6d11}
+  .trend-down{background:#fcebeb;color:#a32d2d}
+  .trend-flat{background:#f1f0e8;color:#5f5e5a}
+  .no-data{text-align:center;padding:40px;color:#898781;font-size:14px}
+  @media(max-width:600px){
+    .header{padding:16px};
+    .search-section,.main{padding:16px 16px 0}
+    .main{padding:16px}
+    .kpi-row{grid-template-columns:1fr 1fr}
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">AB</div>
+  <div class="header-text">
+    <h1>Delhi Sales Dashboard</h1>
+    <p>Year-to-date · Jan–May 2026 · Budweiser, Magnum, Corona, Hoegaarden</p>
+  </div>
+</div>
+
+<div class="search-section">
+  <div class="search-wrap">
+    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </svg>
+    <input id="searchInput" type="text" placeholder="Search outlet name…" autocomplete="off" spellcheck="false">
+    <div id="suggestions"></div>
+  </div>
+</div>
+
+<div class="main" id="mainContent">
+  <div class="empty-state">
+    <h2>Search for an outlet</h2>
+    <p>Type a name above to view sales performance and forecasts</p>
+  </div>
+</div>
+
+<script>
+const MONTHS = ['Jan','Feb','Mar','Apr','May'];
+const SKUS = ['Bud','Magnum','Corona','Hoegaarden'];
+const SKU_COLORS = ['#2a78d6','#1baf7a','#eda100','#e34948'];
+
+// Full dataset - each entry: [name, rm, status, channel, jan[bud,mag,cor,hoe], feb[...], mar[...], apr[...], may[...]]
+// Format: [name, rm, status, channel, [jan_bud, jan_mag, jan_cor, jan_hoe], [feb_bud, feb_mag, feb_cor, feb_hoe], ...]
+const RAW = [
+["Oberoi Hotels","Rashi","Active","Hotels",[15,0,0,15],[30,20,0,40],[14,0,2,22],[20,0,40,25],[0,0,3,2]],
+["PIRATES OF GRILL","Rashi","Active","Fine Dine",[10,10,10,10],[10,0,0,0],[0,0,0,0],[10,10,5,0],[20,10,10,10]],
+["1 OAK","Prerna","Active","PCL",[16,0,9,6],[20,0,7,9],[33,0,23,19],[5,0,10,5],[27,0,14,7]],
+["1022 BUTTER CAFE","Samaksh","Active","PCL",[0,0,0,0],[0,0,0,0],[0,0,0,0],[5,0,2,2],[7,0,8,2]],
+["38 BARRACKS","Samaksh","Active","B&R A",[0,0,0,0],[20,23,8,10],[10,37,6,10],[15,11,10,7],[12,20,10,8]],
+["4S RESTAURANT","Prerna","Active","B&R C",[25,0,10,10],[50,0,15,10],[20,0,10,0],[40,0,10,10],[10,0,8,5]],
+["6 BALLYGUNJE PLACE","Tripti","Active","Fine Dine",[0,0,0,0],[10,0,2,2],[5,0,3,2],[0,0,0,0],[5,0,1,2]],
+["736 Ad Culinary Bar","Prerna","Active","PCL",[0,0,0,0],[0,0,0,0],[12,0,3,2],[0,0,0,0],[0,0,0,0]],
+["7OT OLD TOWN PUB","Tripti","Active","PCL",[2,2,2,0],[5,2,3,2],[5,5,12,9],[0,0,0,0],[0,0,0,0]],
+["98KEYA KAINOOSH","Rashi","Active","Luxury Fine Dine",[10,0,0,5],[5,0,10,0],[20,0,9,13],[0,0,0,0],[0,0,0,0]],
+["AAA NIGHT CLUB","Pradeep","Active","PCL",[20,0,0,0],[0,0,5,0],[20,10,5,0],[20,0,5,0],[35,0,5,0]],
+["AABBCC","Rashi","Active","PCL",[5,0,0,0],[0,0,0,0],[0,0,0,0],[5,0,0,0],[0,0,0,0]],
+["ADDONIS","Samaksh","Active","PCL",[0,0,20,5],[0,0,10,5],[0,0,20,10],[0,0,30,20],[0,0,20,15]],
+["AGAVE ROOM","Rashi","Active","PCL",[0,0,0,0],[0,0,0,0],[5,0,0,0],[10,0,0,0],[15,0,5,0]],
+["AIR BAR & LOUNGE","Rashi","Active","PCL",[9,0,5,2],[0,0,0,0],[11,0,4,2],[0,0,0,0],[0,0,0,0]],
+["Air Force Golf Club","Pradeep","Active","Social Club",[0,0,0,0],[20,0,0,5],[30,0,25,0],[0,0,0,0],[0,0,0,0]],
+["AIRPORT AUTH. OF INDIA","Pradeep","Active","Social Club",[50,0,0,0],[0,0,0,0],[100,0,0,0],[50,0,10,0],[100,0,25,0]],
+["AKA SAKA RESTAURANT","Prerna","Active","B&R B",[5,0,0,0],[2,0,3,0],[0,0,0,0],[7,0,3,0],[0,0,0,0]],
+["AKM Hotels","Rashi","Active","Hotel",[0,0,0,0],[12,0,12,12],[0,0,0,0],[0,0,0,0],[25,0,25,25]],
+["AKRA","Prerna","Active","PCL",[0,0,30,0],[0,0,20,0],[10,0,0,5],[0,0,0,0],[0,0,6,0]],
+["AKUS THE BURGER CO.","Rashi","Active","Fine Dine",[0,0,6,0],[0,0,6,6],[0,0,8,6],[0,0,0,0],[0,0,6,8]],
+["ALKA","Pradeep","Active","Hotels",[0,15,0,0],[15,25,2,0],[15,25,5,0],[0,25,5,0],[40,35,5,0]],
+["ALLURE RESTO-BAR","Pradeep","Active","B&R B",[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,15,0,0]],
+["ALOFT CENTRAL PARK","Rashi","Active","Hotels",[0,0,0,0],[20,0,20,0],[50,0,30,0],[0,0,0,0],[20,0,10,0]],
+["Amaltas Indian Tapas","Prerna","Active","Fine Dine",[0,0,0,0],[0,0,0,3],[0,0,0,0],[0,0,0,3],[0,0,0,0]],
+["Amex Lounge Encalm","Sreebrata","Active","Fine Dine",[0,0,0,0],[2,0,0,0],[25,0,0,0],[0,0,0,0],[20,0,0,0]],
+["ANAND NIKETAN CLUB","Pradeep","Active","Social Club",[0,0,0,0],[0,0,0,0],[10,0,20,5],[0,0,0,0],[85,0,25,10]],
+["ANARDANA HOSPITALITY","Tripti","Active","Fine Dine",[5,0,3,0],[0,0,0,0],[5,0,3,0],[5,0,3,0],[5,0,0,0]],
+["ANDAZ DELHI","Rashi","Active","Hotels",[0,0,0,0],[20,0,37,27],[75,0,70,40],[40,0,0,0],[50,0,65,25]],
+["APEEJAY SURRENDRA PARK","Tripti","Active","Hotels",[0,0,0,0],[0,0,0,0],[20,0,5,5],[0,0,0,0],[0,0,0,0]],
+["APS DOWNTOWN","Pradeep","Active","B&R B",[0,0,0,0],[0,0,0,0],[0,10,5,0],[0,0,0,0],[0,0,0,0]],
+["Arts Room Ambrosia","Tripti","Active","PCL",[0,0,0,0],[0,0,0,0],[0,0,0,0],[3,0,2,2],[0,0,2,2]],
+["AT MOSPHERE","Pradeep","Active","B&R B",[0,0,0,0],[0,0,0,0],[1,0,1,1],[0,0,0,0],[0,0,0,0]],
+["Baardos Blue Lightning","Pradeep","Active","PCL",[20,0,10,10],[30,0,15,0],[0,0,35,10],[10,0,10,5],[10,0,20,10]],
+["BAARSOOM","Tripti","Active","PCL",[40,10,0,0],[30,35,3,1],[50,45,4,1],[20,25,5,1],[47,38,5,0]],
+["BAATLI BAR","Pradeep","Active","B&R B",[0,10,1,1],[0,35,2,1],[0,15,0,0],[0,55,3,1],[0,80,2,2]],
+["BAITHAK","Pradeep","Active","B&R",[0,0,0,0],[0,0,0,0],[0,0,0,0],[5,10,0,0],[0,0,0,0]],
+["BAR CODE VINTAGE BOULEVARD","Rashi","Active","B&R A",[0,10,3,0],[20,10,2,2],[5,5,0,0],[0,0,0,0],[0,0,0,0]],
+["BAR ROOM RAO HOSPITALITY","Tripti","Active","B&R C",[5,10,0,0],[9,22,1,0],[16,50,2,2],[5,17,0,0],[23,41,3,1]],
+["BAR RUM BAR","Pradeep","Active","B&R C",[0,15,0,0],[10,10,0,0],[0,40,0,0],[0,0,0,0],[5,40,0,0]],
+["BARAASA","Pradeep","Active","B&R B",[3,0,0,0],[3,0,0,0],[3,0,2,2],[7,0,2,2],[15,0,1,1]],
+["BARBEQUE NATION Samaksh1","Samaksh","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[10,0,5,5],[0,0,0,0],[5,0,4,4]],
+["BARBEQUE NATION Samaksh2","Samaksh","Active","Fine Dine",[5,0,0,0],[10,0,3,3],[15,0,8,5],[10,0,0,0],[10,0,0,0]],
+["BARBEQUE NATION ROHINI","Pradeep","Active","Fine Dine",[3,0,2,0],[2,0,0,0],[4,0,2,2],[0,0,0,0],[10,0,5,0]],
+["BARBEQUE NATION A UNIT","Pradeep","Active","Fine Dine",[15,0,10,5],[0,0,0,0],[5,0,0,0],[0,0,0,5],[20,0,5,0]],
+["Barbeque Nation Hospitality1","Tripti","Active","Fine Dine",[5,0,0,0],[5,0,0,0],[15,0,10,5],[0,0,0,0],[10,0,0,5]],
+["Barbeque Nation Hospitality2","Rashi","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[10,0,8,0],[0,0,0,0],[10,0,5,5]],
+["BARBEQUE NATION HOSPITALITY3","Prerna","Active","Fine Dine",[0,5,0,0],[0,0,2,2],[10,0,6,5],[0,0,0,0],[5,0,5,2]],
+["Barbeque Nation Hospitality4","Pradeep","Active","B&R B",[0,0,4,0],[10,0,5,0],[10,0,4,4],[0,0,0,0],[0,0,6,4]],
+["BARBEQUE NATION LAXMI NAGAR","Pradeep","Active","Fine Dine",[0,0,0,0],[2,0,0,0],[0,0,2,2],[0,0,0,0],[4,0,4,0]],
+["BARBEQUE NATION SECTOR 21","Prerna","Active","PCL",[4,0,0,0],[0,0,0,0],[5,0,4,2],[0,0,0,0],[6,0,4,0]],
+["BARCODE TERAZZA","Rashi","Active","PCL",[20,0,3,3],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+["BARIO HAUZ","Tripti","Active","PCL",[6,0,5,4],[10,0,5,5],[25,0,5,5],[0,0,5,5],[5,0,0,0]],
+["BEER CAFE BTB","Samaksh","Active","PCL",[0,0,0,0],[9,4,7,6],[20,16,9,8],[0,0,0,0],[6,10,6,6]],
+["BEER GARDEN","Samaksh","Active","B&R B",[2,6,1,1],[3,17,1,0],[16,45,4,1],[0,15,0,0],[8,30,0,0]],
+["Beer Stop TFS Gurgaon","Sreebrata","Active","PCL",[35,80,15,10],[60,75,20,20],[60,130,20,30],[30,60,15,0],[55,85,25,15]],
+["BERCOS RESTAURANT1","Samaksh","Active","Fine Dine",[0,0,0,0],[5,0,3,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+["BERCOS RESTAURANT SAKET","Tripti","Active","B&R C",[0,0,0,0],[8,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+["BERGAMO","Rashi","Active","LUXURY PCL",[0,0,20,0],[0,0,0,0],[95,0,90,0],[0,0,0,0],[25,0,25,10]],
+["BIG BANANA RESTAURANT","Rashi","Active","PCL",[15,15,0,0],[15,25,0,0],[60,75,10,0],[55,95,0,0],[125,125,5,1]],
+["BIG CHILL CAFE","Prerna","Active","Fine Dine",[5,0,0,0],[5,0,5,5],[11,0,10,10],[10,0,0,0],[5,0,5,5]],
+["Big Tree Cafe Dwarka","Rashi","Active","PCL",[10,10,0,0],[12,15,0,3],[25,15,4,4],[10,20,10,10],[10,15,10,10]],
+["BIRA91 TAPROOM","Tripti","Active","PCL",[0,0,0,0],[0,0,0,0],[4,2,2,4],[0,0,0,0],[0,0,0,0]],
+["BLESSWORLD KITCHEN AND BAR","Pradeep","Active","B&R B",[0,0,0,0],[5,0,0,0],[15,0,5,0],[15,0,5,0],[10,0,0,0]],
+["Blue Bar TFS Gurgaon","Sreebrata","Active","PCL",[25,60,10,5],[55,75,25,15],[60,115,25,30],[30,60,15,0],[35,50,25,20]],
+["BLUE EYES CAFE","Rashi","Active","PCL",[0,0,0,0],[0,0,0,0],[0,0,0,0],[25,0,5,0],[0,0,0,0]],
+["BLUEMOON RESTROBAR","Prerna","Active","B&R A",[5,11,0,0],[2,8,0,0],[12,38,0,0],[10,19,0,0],[12,30,0,0]],
+["BO TAI ESQUIRE","Tripti","Active","LUXURY PCL",[0,0,15,0],[40,0,25,0],[125,0,105,0],[0,0,0,0],[55,0,60,5]],
+["BOA VILLAGE","Prerna","Active","PCL",[7,3,8,2],[8,12,3,2],[7,10,2,3],[0,0,0,0],[0,0,0,0]],
+["Bobachee","Pradeep","Active","PCL",[0,0,0,0],[5,0,0,0],[25,0,10,5],[0,0,0,0],[15,0,0,5]],
+["BOHEME CAFE BAR","Pradeep","Active","PCL",[5,6,1,0],[6,20,1,0],[12,22,2,0],[0,15,0,0],[12,25,1,0]],
+["BOMBA FOODS","Prerna","Active","Fine Dine",[0,0,0,0],[0,0,0,5],[0,0,5,5],[0,0,10,10],[0,0,10,20]],
+["Bonne Foi 65","Prerna","Active","PCL",[6,0,0,0],[13,0,0,0],[0,0,0,0],[4,0,2,0],[0,0,0,0]],
+["BOOZERS CLUB","Pradeep","Active","B&R B",[10,40,2,0],[0,20,2,0],[10,0,0,0],[10,50,2,1],[30,60,0,1]],
+["BOUGIE FIRST FIDDLE","Tripti","Active","LUXURY PCL",[0,0,0,0],[0,0,0,5],[0,0,0,3],[0,0,5,5],[0,0,10,10]],
+["BREWFINE SPIRIT","Pradeep","Active","B&R B",[0,20,0,0],[0,15,0,0],[18,97,1,0],[0,20,0,0],[0,59,1,0]],
+["Browne Lounges And Bar","Tripti","Active","PCL",[10,0,0,0],[0,0,0,0],[10,0,25,0],[5,0,30,0],[0,0,65,0]],
+["Budweiser Bar TFS T1","Sreebrata","Active","Airport",[65,165,5,5],[115,205,10,15],[225,365,55,50],[35,155,0,10],[150,310,30,30]],
+["Bulach Stay Gold","Tripti","Active","LUXURY PCL",[30,0,30,30],[30,0,30,20],[35,0,30,30],[20,0,20,20],[45,0,40,30]],
+["By the Bay","Prerna","Active","Fine Dine",[17,0,10,3],[18,0,0,0],[50,0,10,20],[10,0,28,27],[0,0,0,0]],
+["CABAANA KITCHEN AND BAR","Pradeep","Active","B&R A",[0,0,0,0],[5,0,2,0],[22,0,7,7],[0,10,0,0],[0,5,10,5]],
+["CAFE 27","Prerna","Active","PCL",[10,0,5,0],[30,0,6,5],[15,0,10,0],[20,0,5,5],[10,0,5,10]],
+["CAFE AFTER HOURS1","Rashi","Active","PCL",[0,0,0,0],[0,0,0,0],[30,0,0,0],[20,0,0,0],[30,0,0,0]],
+["CAFE ANOTHER DAY","Samaksh","Active","PCL",[0,0,0,0],[3,3,1,0],[3,3,2,1],[3,8,3,2],[8,17,4,2]],
+["CAFE BELMONTE","Sreebrata","Active","B&R C",[5,21,0,0],[3,27,1,1],[11,30,2,2],[8,90,2,0],[17,16,2,2]],
+["CAFE CHILLM","Prerna","Active","B&R C",[5,4,1,1],[10,5,2,1],[16,8,1,1],[5,5,2,1],[18,4,3,2]],
+["CAFE COFEE BAR CCB","Rashi","Active","PCL",[0,0,0,0],[5,8,3,0],[10,10,0,5],[10,10,3,0],[0,19,0,3]],
+["CAFE DE FLORA","Rashi","Active","Fine Dine",[5,0,3,1],[0,0,0,2],[5,0,2,1],[3,0,0,3],[2,2,4,0]],
+["CAFE DELHI HEIGHT CDH1","Sreebrata","Active","Fine Dine",[3,0,0,0],[0,0,0,0],[5,6,3,3],[5,0,0,0],[0,3,3,3]],
+["Cafe Delhi Heights CDH2","Rashi","Active","Fine Dine",[5,0,3,0],[0,5,0,0],[5,5,0,5],[2,0,5,5],[5,5,0,5]],
+["CAFE DELHI HEIGHTS CDH3","Rashi","Active","Fine Dine",[0,0,0,5],[10,10,5,0],[25,20,11,15],[0,0,6,6],[30,25,10,10]],
+["CAFE DELHI HEIGHTS CDH4","Rashi","Active","Fine Dine",[0,10,0,5],[5,10,10,10],[5,10,10,5],[0,0,0,0],[15,15,0,5]],
+["CAFE DELHI HEIGHTS CDH5","Rashi","Active","Fine Dine",[0,0,5,5],[5,0,0,0],[10,10,10,10],[0,0,0,0],[0,0,0,0]],
+["CAFE DELHI HEIGHTS CDH6","Rashi","Active","Fine Dine",[0,0,0,0],[10,0,0,0],[0,5,0,5],[0,0,3,0],[8,0,3,0]],
+["CAFE DELHI HEIGHTS CDH Pacific","Tripti","Active","PCL",[0,3,0,0],[3,3,2,0],[10,10,5,5],[10,0,0,0],[15,5,0,5]],
+["CAFE DELHI HEIGHTS CDH7","Rashi","Active","Fine Dine",[0,0,0,0],[0,8,0,0],[30,20,15,20],[0,5,0,0],[55,5,8,10]],
+["Cafe Delhi Heights CDH8","Rashi","Active","Fine Dine",[10,10,5,5],[0,0,0,0],[10,15,5,5],[10,10,10,10],[15,20,5,8]],
+["CAFE DELHI HEIGHTS CDH9","Rashi","Active","Fine Dine",[0,0,5,5],[5,0,0,0],[10,10,10,10],[0,0,0,0],[0,0,0,0]],
+["Cafe Delhi Heights Ikigai","Prerna","Active","Fine Dine",[0,0,3,1],[2,2,0,0],[3,2,2,0],[2,2,2,3],[3,2,0,3]],
+["CAFE DELHI HEIGHTS CDH10","Rashi","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[5,10,5,5],[6,0,0,5],[0,0,0,0]],
+["CAFE DESIRE","Prerna","Active","FINE DINE",[0,0,0,0],[0,0,0,0],[2,8,1,0],[0,7,1,0],[4,4,1,1]],
+["CAFE MERAKI","Prerna","Active","B&R B",[0,0,0,0],[0,0,0,0],[11,9,8,8],[0,0,0,0],[5,2,3,0]],
+["CAFE SANDOZ1","Prerna","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[50,0,20,10],[0,0,0,0],[30,0,0,0]],
+["CAFE SANDOZ2","Rashi","Active","Fine Dine",[0,0,0,0],[30,0,10,5],[40,0,20,10],[0,0,0,0],[35,0,5,0]],
+["CAFE SANDOZ3","Tripti","Active","Fine Dine",[0,0,0,0],[30,0,15,10],[50,0,20,15],[0,0,0,0],[35,0,5,0]],
+["Cafe Sandoz Satyaniketan","Tripti","Active","Fine Dine",[0,0,0,0],[30,0,10,5],[40,0,20,10],[0,0,0,0],[30,0,0,5]],
+["CAFE SCOOTER","Tripti","Active","B&R B",[25,0,10,0],[0,0,5,0],[30,0,5,0],[0,0,10,0],[15,0,5,0]],
+["CAFE TAXI","Prerna","Active","FINE DINE",[0,0,0,0],[0,0,0,0],[0,0,0,0],[4,3,1,0],[12,12,5,0]],
+["CAFE TESU ESSEX FARMS","Samaksh","Active","Fine Dine",[4,0,0,0],[5,0,0,0],[9,0,7,5],[0,0,0,0],[0,0,0,0]],
+["CAFECCINO TFS T3","Sreebrata","Active","Airport",[40,75,30,20],[30,70,20,10],[110,170,75,20],[0,0,0,0],[60,60,45,20]],
+["CAFETERIA & CO1","Prerna","Active","Fine Dine",[0,0,0,0],[10,0,3,3],[0,0,0,0],[5,5,3,3],[15,15,8,7]],
+["CAFETERIA AND CO2","Rashi","Active","PCL",[5,5,3,3],[15,5,6,6],[0,0,0,0],[13,13,7,3],[18,15,8,4]],
+["CAFFE TONINO Airport","Sreebrata","Active","Airport",[5,0,0,0],[5,5,5,0],[6,4,6,5],[15,17,36,2],[0,15,0,3]],
+["CAFFE TONINO PCL","Sreebrata","Active","PCL",[0,12,12,3],[0,3,5,3],[0,3,5,3],[0,5,68,4],[0,5,0,5]],
+["CAFFE TONINO Samaksh","Samaksh","Active","Airport",[1,0,2,2],[3,0,0,2],[3,0,2,3],[2,0,11,2],[5,0,0,3]],
+["Cala Reussite Hospitality","Sreebrata","Active","Fine Dine",[0,0,0,0],[0,0,5,5],[0,0,5,0],[0,0,0,0],[0,0,7,3]],
+["CALL ME TEN","Rashi","Active","Fine Dine",[0,0,0,0],[10,0,0,3],[12,0,3,6],[5,0,0,3],[13,0,0,11]],
+["CASA PASTA BAR","Tripti","Active","Fine Dine",[0,0,0,0],[2,0,2,2],[4,0,0,3],[0,0,0,0],[4,0,0,2]],
+["CASTLE BARBEQUE","Prerna","Active","FINE DINE",[6,6,6,0],[0,5,0,0],[5,6,0,0],[0,5,0,0],[0,5,2,0]],
+["CE LA VIE","Samaksh","Active","PCL",[5,20,5,10],[10,15,5,3],[35,70,25,30],[0,0,0,0],[30,20,10,10]],
+["Chard H&J Chef","Rashi","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[4,0,0,11],[0,0,0,4],[8,0,0,4]],
+["CHEERS RESTO BAR A","Pradeep","Active","B&R A",[6,6,1,0],[0,0,0,0],[4,5,2,1],[0,0,0,0],[0,0,0,0]],
+["CHELMS FORD CLUB","Sreebrata","Active","Social Club",[0,0,0,0],[35,0,10,10],[40,0,0,10],[0,5,20,10],[80,10,0,0]],
+["CHICA","Sreebrata","Active","LUXURY PCL",[0,0,0,0],[10,0,10,0],[50,0,50,20],[0,0,0,0],[20,0,20,20]],
+["CHICKEN INN RESTAURANT","Pradeep","Active","Fine Dine",[0,0,0,0],[20,0,5,5],[20,0,10,5],[20,0,5,5],[20,0,10,0]],
+["CHIDO","Samaksh","Active","PCL",[10,0,0,0],[15,0,10,8],[20,0,5,5],[0,0,0,0],[0,0,0,0]],
+["Chilis Grill & Bar1","Tripti","Active","PCL",[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[35,20,15,10]],
+["Chilis Grill & Bar2","Samaksh","Active","Fine Dine",[5,24,8,5],[16,19,15,10],[30,55,17,12],[1,16,11,11],[32,35,14,18]],
+["Chilis Grill & Bar3","Rashi","Active","Fine Dine",[15,15,10,10],[35,25,20,10],[55,35,20,10],[0,20,5,10],[25,30,20,20]],
+["Chilis Grill And Bar1","Tripti","Active","Fine Dine",[25,20,10,10],[15,30,30,20],[60,80,35,30],[30,35,25,20],[60,70,30,30]],
+["ChiliS Grill And Bar2","Rashi","Active","Fine Dine",[30,25,20,5],[12,15,15,10],[50,25,35,25],[80,40,40,25],[5,50,20,25]],
+["M/S CHILIS","Prerna","Active","Fine Dine",[0,0,0,0],[15,8,20,15],[40,60,24,17],[18,18,5,8],[27,70,29,15]],
+["CHILL HOUSE","Pradeep","Active","B&R B",[5,10,0,0],[22,23,1,1],[19,21,1,1],[30,41,4,2],[11,11,1,0]],
+["Chilli Pop","Rashi","Active","PCL",[0,0,0,0],[5,0,3,2],[7,0,4,4],[5,0,3,2],[13,0,5,2]],
+["China Fort","Samaksh","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[16,2,4,8],[8,7,2,0],[0,18,40,5]],
+["CHINA GARDEN RESTAURANT","Prerna","Active","Fine Dine",[4,0,0,2],[0,0,0,0],[4,0,2,2],[4,0,3,3],[4,0,3,3]],
+["CHOR BIZARRE","Pradeep","Active","PCL",[0,0,0,0],[0,0,0,0],[4,0,0,3],[5,0,0,0],[0,0,0,0]],
+["CHUNGWA REST","Prerna","Active","Fine Dine",[3,0,2,0],[5,0,2,0],[0,0,3,2],[0,0,0,3],[0,3,0,0]],
+["CIVIL LINES SOCIAL","Pradeep","Active","Social Club",[0,0,0,0],[0,0,6,0],[0,0,10,0],[0,0,0,0],[0,0,10,0]],
+["CLARIDGES","Sreebrata","Active","Hotels",[0,0,0,0],[0,0,0,0],[0,0,70,0],[0,0,0,0],[0,0,0,0]],
+["CLASS ROOM CAFE & BAR","Pradeep","Active","B&R C",[10,5,0,0],[15,39,2,2],[33,62,0,0],[13,36,1,1],[38,52,1,2]],
+["CLASSIC DIPLOMAT RESTAURANT","Rashi","Active","B&R C",[0,0,0,0],[5,22,2,0],[16,27,2,2],[0,30,0,0],[11,21,2,2]],
+["CLASSY CAFÉ BAR","Prerna","Active","B&R A",[0,5,0,0],[0,3,2,2],[10,10,0,4],[0,0,0,0],[5,10,4,2]],
+["CLAY 1 GRILL","Pradeep","Active","B&R B",[10,0,0,0],[10,0,0,0],[50,0,20,0],[0,0,0,0],[10,0,0,0]],
+["CLAY OVEN GREEN PARK","Samaksh","Active","B&R B",[5,0,0,0],[20,0,10,0],[0,0,0,5],[0,0,0,5],[10,0,0,0]],
+["Cleverchefs Hospitality","Prerna","Active","Fine Dine",[0,11,3,0],[8,13,2,3],[10,26,6,4],[5,15,9,7],[5,30,0,2]],
+["CLING KITCHEN AND BAR","Prerna","Active","PCL",[20,0,0,0],[20,0,5,2],[25,0,0,0],[10,0,0,0],[5,0,0,0]],
+["CLUB BW AT HOTEL THE SURYAA","Tripti","Active","PCL",[0,0,10,0],[0,0,30,0],[0,0,135,0],[0,0,0,0],[0,0,20,10]],
+["CLUB NASHA","Pradeep","Active","B&R B",[0,5,0,0],[3,6,0,0],[0,6,0,0],[1,3,0,0],[0,3,0,0]],
+["CLUE LOUNGE & BAR","Rashi","Active","PCL",[10,0,7,3],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+["CONNAUGHT ROYALE","Samaksh","Active","Hotels",[0,0,0,0],[4,0,0,0],[0,0,0,0],[4,0,0,0],[0,0,0,0]],
+["CONSTITUTION CLUB OF INDIA","Sreebrata","Active","Social Club",[0,0,0,0],[30,0,0,0],[65,0,25,5],[0,0,5,20],[80,0,0,0]],
+["COSY BOX","Sreebrata","Active","LUXURY PCL",[0,0,0,0],[10,0,10,0],[0,0,0,0],[0,0,15,10],[25,0,15,10]],
+["CROWN PLAZA TODAY","Tripti","Active","Hotels",[0,0,0,0],[3,0,3,3],[45,0,55,13],[0,0,0,0],[75,0,25,10]],
+["CROWNE PLAZA EROS","Pradeep","Active","Hotels",[0,0,0,0],[0,0,30,0],[30,0,0,0],[30,0,40,20],[40,0,50,10]],
+["Crowne Plaza Rohini","Pradeep","Active","Hotels",[0,0,0,0],[10,10,30,10],[20,20,80,10],[0,0,0,0],[0,0,0,0]],
+["D D CLUB IUA TRUST","Pradeep","Active","Social Club",[0,0,0,0],[5,5,5,0],[10,10,0,0],[10,10,10,0],[10,5,5,0]],
+["D J INFRASTRUCTURE","Pradeep","Active","PCL",[5,0,0,0],[5,0,5,5],[10,0,10,0],[0,0,0,0],[10,0,20,25]],
+["DAARU WALA NIVAAN1","Pradeep","Active","B&R C",[0,5,0,0],[2,15,0,0],[10,15,2,0],[12,20,0,0],[7,35,3,0]],
+["DAARU WALA NIVAAN2","Pradeep","Active","B&R C",[0,10,0,0],[5,10,0,0],[6,11,2,0],[12,9,3,0],[17,31,0,1]],
+["DAARU WALA NIVAAN3","Pradeep","Active","B&R B",[5,14,0,0],[12,58,0,0],[44,110,6,0],[18,102,4,0],[33,113,5,0]],
+["DAARU WALA NIVAAN4","Pradeep","Active","B&R",[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[20,35,3,2]],
+["DAARU WALA M/S","Pradeep","Active","B&R C",[0,0,0,0],[0,6,0,0],[4,7,2,1],[3,8,3,1],[14,17,5,2]],
+["DAO BED LOUNGE","Prerna","Active","PCL",[10,0,5,5],[10,0,5,0],[35,7,20,15],[40,10,15,10],[40,10,20,20]],
+["DARE DAVILS BAR TFS T2","Sreebrata","Active","Airport",[105,105,10,30],[110,125,50,10],[100,120,50,30],[30,80,35,0],[100,100,10,20]],
+["Darlings Xtend","Prerna","Active","PCL",[0,0,0,0],[0,0,0,0],[2,2,2,2],[2,0,2,2],[4,4,0,0]],
+["DARYAGANJ Matchless","Sreebrata","Active","Fine Dine",[16,0,8,8],[20,0,15,15],[10,0,10,10],[10,0,3,3],[15,0,10,10]],
+["Daryaganj Hospitality1","Prerna","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,5,5],[15,0,10,10]],
+["Daryaganj Hospitality2","Prerna","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[0,0,0,0],[10,0,10,10],[10,0,10,10]],
+["DARYAGANJ A UNIT","Prerna","Active","Fine Dine",[0,0,0,0],[2,0,3,2],[3,0,3,4],[3,0,0,3],[2,0,2,0]],
+["DARZI BAR","Samaksh","Active","PCL",[0,0,0,0],[7,15,1,2],[20,30,4,3],[5,10,1,1],[15,35,5,3]],
+["DAWAT E MEHFIL","Pradeep","Active","FINE DINE",[0,0,0,0],[14,50,5,5],[10,20,0,0],[20,40,0,0],[20,50,5,0]],
+["DCA JCO CLUB","Prerna","Active","Social Club",[0,0,0,0],[15,0,0,0],[15,5,2,0],[0,0,0,0],[45,0,0,0]],
+["DDA CLUB HOUSE","Prerna","Active","Social Club",[0,0,0,0],[0,0,0,0],[0,0,0,0],[20,0,0,0],[0,0,0,0]],
+["DE FORBIDDEN Janakpuri","Samaksh","Active","B&R C",[50,0,0,0],[150,0,10,0],[50,0,0,0],[100,0,10,0],[200,0,0,0]],
+["Dear Zindagi Cafe & Bar","Pradeep","Active","B&R B",[4,15,0,1],[2,18,0,0],[6,28,0,0],[7,35,1,0],[4,18,0,0]],
+["DEFENCE COLONY WELFARE","Prerna","Active","Social Club",[0,0,0,0],[35,0,0,0],[25,0,3,2],[0,0,0,0],[0,0,0,0]],
+["DELHI BARBEQUE","Rashi","Active","PCL",[0,0,0,0],[0,5,5,0],[0,25,5,0],[0,0,0,0],[0,15,5,0]],
+["DELHI CLUB HOUSE","Rashi","Active","Fine Dine",[3,0,2,2],[5,0,5,5],[5,0,10,10],[0,0,0,0],[10,0,10,0]],
+["DELHI GOLF CLUB","Tripti","Active","Social Club",[0,0,0,10],[30,0,15,15],[35,0,25,5],[30,0,20,15],[0,0,0,0]],
+["DELHI GYMKHANA CLUB","Tripti","Active","Social Club",[40,0,0,0],[50,0,20,0],[35,0,20,20],[65,0,25,35],[75,0,30,25]],
+["DELHI KA TADKA","Pradeep","Active","Fine Dine",[0,10,0,0],[15,20,0,0],[0,25,0,0],[0,20,0,0],[10,60,0,0]],
+["DELI BELLY RESTAURANT","Tripti","Active","B&R B",[19,27,5,2],[18,42,2,2],[25,43,0,2],[15,42,2,2],[24,56,2,3]],
+["Delia My Bar1","Prerna","Active","PCL",[0,0,0,0],[5,50,0,3],[30,45,13,2],[5,50,5,5],[45,35,0,5]],
+["Delia My Bar2","Pradeep","Active","PCL",[5,13,0,0],[25,30,3,2],[25,30,2,0],[39,40,2,1],[24,24,2,0]],
+["DEPOT 48","Prerna","Active","PCL",[4,0,3,0],[11,0,8,0],[13,0,10,0],[8,0,8,2],[15,0,7,2]],
+["DESI VILLAGIO","Samaksh","Active","Fine Dine",[2,5,0,1],[3,7,1,0],[4,7,0,0],[3,7,1,1],[6,6,1,0]],
+["DHABA A UNIT","Tripti","Active","Fine Dine",[0,0,2,1],[0,0,1,2],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+["DHABA ESTD 1986 RK FOODS","Tripti","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[2,0,0,0],[0,0,2,5],[0,0,0,0]],
+["DHABA ESTD 1986 RAMPUSHP","Prerna","Active","Fine Dine",[5,0,2,0],[0,0,0,0],[2,0,1,2],[0,0,0,0],[0,0,4,2]],
+["DHABA ESTD 1986 DELHI2","Prerna","Active","PCL",[0,0,0,0],[0,0,0,0],[0,0,5,5],[0,0,3,3],[0,0,5,0]],
+["Dice Bar And Lounge","Pradeep","Active","B&R B",[0,0,0,0],[0,10,0,0],[0,0,0,0],[0,0,0,0],[5,5,0,0]],
+["Dicha Jai Guruji Foods","Rashi","Active","B&R B",[0,0,0,0],[20,0,10,0],[20,0,0,0],[0,0,20,5],[10,0,0,0]],
+["DIGGIN BABA SRI CHAND","Samaksh","Active","Fine Dine",[5,0,5,10],[0,0,0,0],[10,0,10,10],[10,0,0,0],[0,0,0,0]],
+["DIGGIN BABA SRI CHAND2","Samaksh","Active","Fine Dine",[5,0,5,0],[0,0,0,0],[5,0,5,5],[0,5,10,5],[0,0,0,0]],
+["DIGGIN BABA SRI CHAND3","Pradeep","Active","Fine Dine",[0,0,5,0],[10,0,5,10],[0,0,0,0],[20,0,10,16],[10,0,8,0]],
+["DILLI STREAT TFS T3","Sreebrata","Active","Airport",[39,61,6,4],[46,67,15,14],[85,117,35,15],[26,51,5,3],[0,0,0,0]],
+["Dilli Streat TFS T1","Sreebrata","Active","Airport",[30,60,10,10],[40,120,15,12],[64,140,28,21],[5,51,12,0],[80,90,10,13]],
+["DIRTY GOOD Summer House","Sreebrata","Active","LUXURY PCL",[10,0,10,5],[40,0,55,45],[60,0,120,20],[10,0,15,10],[0,0,10,0]],
+["DIVA RESTT.","Tripti","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[3,0,3,1],[0,0,0,0],[0,0,0,0]],
+["DOC X","Rashi","Active","Fine Dine",[0,0,0,0],[4,0,0,0],[8,0,0,0],[8,0,4,0],[4,0,2,2]],
+["DOWNTOWN VILLAGE","Tripti","Active","PCL",[20,20,5,0],[20,10,3,2],[25,25,15,2],[15,10,5,5],[65,38,12,7]],
+["DR ZOMBIE","Samaksh","Active","PCL",[10,23,2,2],[18,22,2,2],[22,39,6,2],[15,25,0,3],[5,30,5,5]],
+["DRAMZ WHISKY BAR","Tripti","Active","PCL",[0,0,5,10],[0,0,16,5],[45,0,36,21],[10,0,10,5],[25,10,20,15]],
+["DRINK N DINE RESTAURANT","Prerna","Active","B&R A",[8,40,1,1],[8,40,1,1],[30,55,2,2],[15,50,2,2],[25,50,2,2]],
+["DROOL FRESH RESTT","Rashi","Active","B&R A",[0,5,0,0],[2,10,0,0],[4,15,0,0],[0,10,0,0],[0,20,0,0]],
+["DROOL KITCHEN","Rashi","Active","Fine Dine",[0,0,0,0],[10,10,0,0],[5,5,0,3],[13,15,4,0],[15,23,5,0]],
+["DRUMS OF HEAVEN","Samaksh","Active","Fine Dine",[0,0,0,0],[0,5,0,0],[20,5,2,2],[0,10,2,2],[5,10,0,2]],
+["DUTY FREE DREAM BAR","Prerna","Active","PCL",[0,0,0,0],[0,0,0,0],[10,65,5,10],[18,45,20,15],[10,40,15,10]],
+["DUTY FREE CAFE","Rashi","Active","PCL",[5,10,0,2],[0,10,0,2],[10,20,5,2],[10,20,5,2],[5,8,5,2]],
+["DVARA DAL SAMARKAND","Prerna","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,2,4],[0,6,8,4]],
+["EAST DELHI DINER","Pradeep","Active","PCL",[2,20,1,1],[10,40,2,2],[6,28,0,2],[11,68,3,8],[12,58,3,4]],
+["EAST END CLUB","Pradeep","Active","Social Club",[0,0,0,0],[14,0,0,0],[10,0,0,0],[0,0,2,0],[10,0,0,0]],
+["ECHOES TAUS VENTURE","Rashi","Active","Fine Dine",[5,0,5,0],[5,0,0,0],[12,0,3,8],[9,0,3,0],[13,0,8,8]],
+["ECHOES ELR EATS","Rashi","Active","Fine Dine",[10,0,8,7],[0,0,0,0],[15,0,2,6],[5,0,0,0],[16,0,5,3]],
+["ECHOES HADHPALATABLE","Rashi","Active","Fine Dine",[0,0,0,7],[8,0,5,0],[20,0,10,6],[5,0,0,0],[18,0,5,5]],
+["EDESIA HOSPITALITY","Rashi","Active","Fine Dine",[0,0,5,0],[15,0,5,5],[20,0,3,8],[0,0,3,3],[10,5,0,0]],
+["EDNA AXARO","Prerna","Active","PCL",[5,0,5,5],[5,0,0,0],[8,0,2,2],[2,0,5,4],[7,0,6,2]],
+["ELA KITCHEN ROOFTOP","Rashi","Active","PCL",[10,0,0,0],[20,0,3,0],[85,0,10,8],[20,0,10,2],[40,0,7,10]],
+["ELATION","Prerna","Closed","PCL",[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+["ELEVEN COURSE","Prerna","Active","PCL",[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[5,0,7,7]],
+["EMBASSY RESTT.","Samaksh","Active","PCL",[0,0,0,0],[0,0,0,0],[0,10,10,0],[0,0,0,0],[0,25,5,0]],
+["EMBEY RESTAURANT","Rashi","Active","B&R B",[0,15,3,0],[10,25,2,0],[20,30,5,0],[25,20,2,0],[0,30,0,0]],
+["ENCALM LOUNGE PCL","Sreebrata","Active","PCL",[0,0,0,0],[0,0,0,0],[1,0,0,0],[0,0,0,0],[1,0,0,1]],
+["ENCALM LOUNGE Airport1","Sreebrata","Active","Airport",[1,1,1,0],[5,3,4,3],[22,22,17,17],[0,0,0,0],[20,25,15,10]],
+["ENCALM LOUNGE Airport2","Sreebrata","Active","Airport",[400,0,0,0],[550,0,0,0],[900,0,0,0],[100,0,0,0],[775,0,0,0]],
+["ENCALM LOUNGE Airport3","Sreebrata","Active","Airport",[0,0,0,0],[200,0,0,0],[295,0,0,0],[0,0,0,0],[0,0,0,0]],
+["ENCALM LOUNGE Airport4","Sreebrata","Active","Airport",[10,10,0,5],[5,10,0,10],[10,15,10,0],[10,10,10,10],[20,35,15,10]],
+["ENCALM LOUNGE Airport5","Sreebrata","Active","Airport",[20,0,15,0],[40,0,15,0],[70,0,30,5],[15,0,5,5],[70,0,35,20]],
+["ENCALM LOUNGE Airport6","Sreebrata","Active","Airport",[1,0,1,1],[2,3,1,0],[7,15,3,3],[0,0,0,0],[0,3,0,0]],
+["Encalm Prive Lounge","Sreebrata","Active","Fine Dine",[4,0,0,0],[5,0,0,0],[20,0,0,0],[0,0,0,0],[0,0,0,0]],
+["ENOUNGE ENCALM","Sreebrata","Active","Airport",[10,5,0,5],[0,5,5,10],[10,10,0,0],[5,4,5,5],[15,20,5,5]],
+["EPIC RESTRO BAR RS FOOD","Tripti","Active","PCL",[2,2,3,0],[7,5,0,1],[10,9,4,2],[6,10,5,2],[8,4,4,2]],
+["EPICURE HOSPITALITY CDH","Prerna","Active","PCL",[5,10,0,0],[0,0,0,0],[10,10,3,3],[10,10,3,3],[15,15,5,5]],
+["EROS HOTEL","Tripti","Active","Hotels",[0,0,0,0],[0,0,0,0],[25,0,0,0],[25,0,0,0],[25,0,0,0]],
+["Escape 69 Cafe","Rashi","Active","PCL",[50,0,0,0],[80,0,5,0],[120,0,0,0],[75,0,5,0],[90,25,0,0]],
+["ESSEX FARM RESTT.","Samaksh","Active","PCL",[15,0,4,8],[30,0,4,3],[20,0,5,5],[0,0,4,3],[10,0,5,5]],
+["Evergreen Hospitality","Samaksh","Active","B&R B",[0,0,0,0],[10,0,5,5],[35,0,10,10],[0,0,10,10],[20,0,5,0]],
+["EVVA SALT AND STRAW","Pradeep","Active","PCL",[20,0,3,0],[10,0,6,0],[15,0,6,0],[15,0,3,0],[30,0,0,0]],
+["EXCUSE ME BOSS CP","Samaksh","Active","PCL",[2,2,2,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[2,5,3,3]],
+["FARZI CAFE","Samaksh","Active","PCL",[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+["FAT LULUS CAFE","Rashi","Active","PCL",[3,0,5,3],[3,0,0,4],[8,0,9,8],[0,0,5,3],[4,0,0,4]],
+["FATJAR CAFÉ AND MARKET","Prerna","Active","Fine Dine",[5,0,2,3],[0,0,0,0],[4,0,2,2],[0,0,0,0],[6,0,3,1]],
+["FEB X HOSPITALITY","Rashi","Active","B&R B",[10,0,6,4],[2,0,11,2],[13,0,16,8],[3,0,5,2],[7,0,11,7]],
+["FIG & MAPPLE","Prerna","Active","Fine Dine",[3,0,0,1],[8,0,3,3],[12,0,5,3],[0,0,0,0],[3,0,0,0]],
+["FIO","Tripti","Active","Fine Dine",[5,0,0,5],[13,0,8,8],[10,0,3,5],[8,0,5,3],[15,0,10,10]],
+["FIRE N ICE RESTAURANT","Prerna","Active","B&R B",[0,0,0,0],[30,63,7,0],[30,65,5,0],[0,0,0,0],[35,65,1,0]],
+["Flos La Lagos","Rashi","Active","B&R B",[0,0,0,0],[10,15,5,0],[0,10,5,3],[0,0,0,0],[30,30,10,5]],
+["FLYING CLUB ISHTARA","Prerna","Active","Fine Dine",[0,0,0,0],[0,50,10,3],[0,0,0,0],[10,55,12,7],[20,50,0,0]],
+["FOUR POINTS BY SHERATON","Rashi","Active","Hotels",[20,0,0,10],[0,0,10,0],[0,0,0,0],[0,0,0,0],[10,0,8,5]],
+["FRIENDS CLUB","Tripti","Active","Social Club",[10,0,0,0],[20,0,10,5],[55,0,20,10],[25,0,20,20],[0,0,0,0]],
+["FUJIYA RESTAURANT","Pradeep","Active","Fine Dine",[0,0,0,0],[15,0,4,0],[27,0,10,12],[0,0,6,8],[30,0,7,3]],
+["G3 Kitchen And Bar","Pradeep","Active","B&R B",[5,0,0,0],[5,0,5,0],[0,0,0,0],[5,0,5,0],[10,0,10,0]],
+["Game Palacio","Tripti","Active","PCL",[0,0,0,0],[5,0,0,0],[20,0,20,5],[0,0,0,0],[10,0,0,0]],
+["GARAGE INC. AMERICAN DINER","Tripti","Active","PCL",[82,0,12,2],[77,0,9,2],[65,0,6,3],[45,0,7,4],[53,0,3,3]],
+["GASTRONOMICA VAGABONDS","Prerna","Active","PCL",[0,0,2,2],[21,0,5,3],[36,0,4,2],[15,0,3,3],[35,0,5,3]],
+["GLITZ LOUNGE AND BAR","Pradeep","Active","B&R B",[0,0,0,0],[0,13,2,1],[0,0,0,0],[0,0,0,0],[0,2,2,2]],
+["GLOBAL CUISINES","Pradeep","Active","B&R B",[3,0,1,1],[0,0,0,0],[3,0,1,1],[0,0,2,2],[0,0,0,0]],
+["GLORI SUNRISE HOSPITALITY","Pradeep","Active","PCL",[0,0,0,0],[10,0,10,0],[50,0,0,5],[0,0,5,0],[50,0,10,7]],
+["GOLA RESTT.","Samaksh","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[15,0,5,2],[0,0,0,0],[10,0,5,2]],
+["GOLA SIZZELERS","Rashi","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[10,0,3,0],[0,0,0,0],[10,0,5,2]],
+["GOLA SIZZLERS1","Samaksh","Active","Fine Dine",[0,0,0,0],[10,0,5,5],[10,0,5,0],[0,0,0,0],[10,0,10,3]],
+["Gola Sizzlers Ark F","Prerna","Active","Fine Dine",[5,0,5,5],[20,5,0,0],[0,5,5,0],[0,10,5,0],[15,5,0,0]],
+["GOLA SIZZLERS TASTE MASTERS","Pradeep","Active","Fine Dine",[4,5,3,2],[3,3,3,1],[3,5,2,0],[10,7,4,3],[7,15,5,2]],
+["GOLA SIZZLERS PVT1","Prerna","Active","Fine Dine",[0,0,0,0],[10,0,5,5],[15,0,5,2],[0,0,0,0],[10,0,8,3]],
+["GOLA SIZZLERS PVT2","Rashi","Active","Fine Dine",[0,0,0,0],[10,0,0,0],[10,0,5,0],[0,0,0,0],[10,0,5,3]],
+["GOLA SIZZLERS PVT3","Rashi","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[15,0,5,0],[0,0,0,0],[10,0,5,2]],
+["GOLA SIZZLERS PVT4","Tripti","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[15,0,5,0],[0,0,0,0],[10,0,5,3]],
+["GOLA SIZZLERS PVT5","Tripti","Active","Fine Dine",[0,0,0,0],[10,0,5,5],[5,0,2,0],[0,0,0,0],[10,0,5,2]],
+["GOLD RESTO BAR","Pradeep","Active","PCL",[30,50,5,0],[0,0,0,0],[30,50,0,0],[30,50,5,0],[0,30,0,0]],
+["Golibaazz JIDS HOSPITALITY","Rashi","Active","B&R C",[5,10,0,0],[15,35,3,0],[20,35,3,0],[45,55,10,0],[0,0,0,0]],
+["Grasshopper Cafe","Prerna","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[10,0,0,5],[10,0,5,5],[20,0,11,6]],
+["Greenr RK","Prerna","Active","Fine Dine",[0,0,0,0],[15,0,15,0],[3,3,13,0],[0,0,6,0],[5,2,18,1]],
+["GULMOHAR SPORTS CLUB","Samaksh","Active","Social Club",[5,0,0,0],[35,0,8,7],[0,0,5,5],[15,0,6,5],[13,0,5,0]],
+["GUNG THE PALACE","Samaksh","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[0,0,0,0],[30,0,0,0],[30,0,0,0]],
+["HABBIT SHRI JI IMPEX","Rashi","Active","PCL",[0,0,0,0],[0,0,0,5],[3,0,4,1],[3,0,5,3],[5,0,8,5]],
+["HALDI FOODS","Sreebrata","Active","B&R B",[0,0,0,0],[5,0,5,5],[10,0,5,3],[0,0,0,0],[5,0,0,5]],
+["Hans Plaza","Samaksh","Active","Hotels",[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[5,0,10,0]],
+["HARD ROCK CAFE","Samaksh","Active","PCL",[0,0,0,0],[30,0,0,0],[20,10,5,0],[10,10,0,0],[20,20,10,10]],
+["HARLEQUIN BIRYANI MALL","Samaksh","Active","Fine Dine",[5,0,0,0],[5,5,0,0],[5,3,0,0],[0,0,0,0],[0,0,0,0]],
+["HAUZ KHAS OFFICIAL","Tripti","Active","PCL",[15,15,8,0],[10,0,0,1],[0,0,0,0],[19,0,0,1],[31,2,2,0]],
+["HAVE MORE RESTAURANT","Tripti","Active","Fine Dine",[2,0,3,3],[6,0,2,5],[10,0,6,2],[0,0,5,5],[9,0,5,6]],
+["HAVEMORE RESTAURANT SAKET","Tripti","Active","Fine Dine",[0,0,0,0],[5,0,2,3],[10,0,7,6],[4,0,2,4],[6,0,3,4]],
+["HAWK I","Pradeep","Active","B&R A",[0,0,0,0],[15,0,10,5],[25,0,5,0],[0,0,0,0],[0,0,0,0]],
+["HELTER SKELTER","Rashi","Active","PCL",[4,12,2,4],[2,12,1,0],[13,33,4,4],[8,27,3,3],[6,35,6,5]],
+["HIKKI DRAMA RESTAURENTS","Tripti","Active","Fine Dine",[2,0,2,0],[5,0,2,1],[6,0,6,3],[0,0,0,0],[11,0,7,5]],
+["Hilton Garden Inn","Tripti","Active","Hotels",[0,0,0,0],[0,0,0,0],[10,0,0,0],[10,0,10,0],[0,0,0,0]],
+["HOLIDAY CLUB","Sreebrata","Active","Social Club",[0,0,0,0],[90,0,30,30],[40,0,0,0],[0,0,15,10],[40,0,0,0]],
+["HOLIDAY INN WAVE HOSPITALITY","Prerna","Active","Hotels",[0,0,0,0],[0,0,30,0],[0,0,0,0],[0,0,0,0],[20,0,103,20]],
+["HOLIDAY INN EROS","Pradeep","Active","Hotels",[0,0,0,0],[0,0,0,0],[75,0,30,10],[0,0,0,0],[0,0,50,0]],
+["HOLY SHRINE HOTELS","Pradeep","Active","Hotels",[5,0,2,2],[0,0,0,0],[15,5,1,1],[0,0,0,0],[10,5,2,2]],
+["HOOTER RESTRO AND BAR","Pradeep","Active","PCL",[0,0,0,0],[0,0,0,0],[10,0,0,0],[0,0,0,0],[0,0,0,0]],
+["HOUSE OF BOHO ALLES","Prerna","Active","PCL",[10,0,0,0],[15,0,0,5],[25,0,5,11],[10,0,5,5],[15,0,12,5]],
+["HOUSE OF ROYALS","Prerna","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[22,0,9,5],[0,0,0,0],[0,0,0,0]],
+["HUNGRY HEART DINNER","Tripti","Active","PCL",[270,0,0,0],[0,0,0,0],[123,0,5,0],[110,0,20,0],[210,0,5,0]],
+["HYATT REGENCY","Sreebrata","Active","Hotels",[0,0,50,0],[50,0,0,0],[120,0,100,50],[75,0,0,0],[10,0,10,10]],
+["I CUBE RESTO","Pradeep","Active","PCL",[0,0,0,0],[5,5,0,0],[0,0,0,0],[4,12,0,0],[0,0,0,0]],
+["IKK PANJAB EKDISHA","Prerna","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[10,0,9,5],[0,0,0,0],[5,0,0,0]],
+["IKK PANJAB BRIGHT","Samaksh","Active","Fine Dine",[3,0,0,2],[3,0,2,2],[0,0,0,0],[3,0,3,2],[3,0,2,1]],
+["IKK PUNJAB Rashi","Rashi","Active","Fine Dine",[5,0,0,0],[20,0,0,0],[10,0,10,5],[8,0,0,5],[20,0,0,0]],
+["ILE BAR RESTAURANT","Sreebrata","Active","Airport",[30,30,10,0],[8,8,6,3],[15,25,10,5],[0,0,0,0],[10,10,0,5]],
+["ILE BAR DEVYANI","Sreebrata","Active","Airport",[5,15,5,5],[6,6,3,0],[6,6,5,2],[0,0,0,0],[0,0,0,0]],
+["India Habitat Centre","Pradeep","Active","Fine Dine",[0,0,0,0],[0,0,25,0],[50,0,50,0],[60,0,50,0],[60,0,0,0]],
+["INDIA INTERNATIONAL CENTRE","Pradeep","Active","Fine Dine",[0,0,0,0],[25,0,10,0],[95,0,25,0],[0,0,0,0],[30,0,20,0]],
+["INDIAN ACCENT","Pradeep","Active","Fine Dine",[0,0,1,2],[0,0,1,3],[0,0,1,4],[0,0,1,1],[0,0,2,4]],
+["INDY BY QLA","Tripti","Active","PCL",[0,0,2,3],[0,0,0,0],[14,0,8,9],[0,0,0,0],[0,0,0,0]],
+["INVITATION K GUJRANWALA TOWN","Prerna","Active","PCL",[5,5,5,5],[0,0,0,0],[5,5,7,0],[5,5,0,5],[8,0,0,0]],
+["IRISH HOUSE TFS T3","Sreebrata","Active","Airport",[20,90,45,25],[80,105,50,30],[150,195,90,20],[20,35,0,10],[105,128,75,25]],
+["Irish House TFS T1","Sreebrata","Active","Airport",[45,70,25,0],[35,70,25,10],[70,125,40,15],[10,90,15,9],[55,80,22,17]],
+["ITP LAIDBACK CAFE","Tripti","Active","PCL",[10,5,5,5],[10,0,5,0],[40,15,15,15],[25,10,15,10],[50,10,20,10]],
+["Ivoryy Fusion Bar","Samaksh","Active","Fine Dine",[10,0,6,11],[10,0,10,10],[0,0,0,0],[0,0,5,5],[0,0,15,15]],
+["JADE GARDEN RESTAURANT","Pradeep","Active","B&R B",[0,10,0,0],[5,25,3,0],[10,25,0,0],[0,40,0,0],[15,35,4,0]],
+["JAGIR PLACE","Sreebrata","Active","Hotels",[10,0,5,0],[20,0,10,0],[40,0,5,5],[0,0,0,0],[20,0,5,5]],
+["JAMIES PIZZERIA","Prerna","Active","Fine Dine",[0,0,0,0],[5,0,2,2],[0,5,0,2],[0,0,2,1],[5,6,0,3]],
+["JAMUN RESTAURANT & BAR","Pradeep","Active","PCL",[0,0,0,0],[0,0,0,0],[5,0,15,5],[5,0,5,5],[5,0,0,3]],
+["JANAK PURI CLUB","Samaksh","Active","Social Club",[0,0,0,0],[0,25,0,0],[0,0,10,0],[0,0,10,0],[0,50,20,0]],
+["JANNAT THE HEAVEN","Pradeep","Active","B&R A",[10,20,5,5],[0,0,0,0],[0,0,0,0],[0,0,0,0],[10,20,0,0]],
+["JHANPANAH CLUB","Prerna","Active","Social Club",[0,0,0,0],[25,0,0,0],[15,0,5,0],[10,0,0,0],[60,0,0,0]],
+["JW MARRIOTT","Tripti","Active","Hotels",[0,0,60,0],[20,0,40,11],[63,0,59,15],[125,0,125,0],[27,0,23,18]],
+["KEY NIGHT CLUB AONE BAR","Samaksh","Active","PCL",[0,0,0,0],[20,0,30,0],[40,0,20,0],[30,0,60,0],[30,0,35,0]],
+["KHIDMAT RESTAURANT","Sreebrata","Active","B&R B",[5,5,0,0],[5,5,0,0],[10,10,2,0],[10,20,2,0],[15,15,5,0]],
+["KHIKHI PONY TUMBLER","Rashi","Active","LUXURY PCL",[10,0,0,5],[0,0,0,5],[10,0,0,5],[10,0,0,5],[30,0,0,20]],
+["KIKLI STAR","Samaksh","Active","Fine Dine",[0,0,2,0],[0,0,4,2],[0,0,16,8],[0,0,0,4],[4,0,4,4]],
+["KILL THE BILL CP","Samaksh","Active","B&R B",[4,94,1,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[5,13,22,22]],
+["Kitchen Klub","Pradeep","Active","B&R B",[0,0,0,0],[0,10,1,1],[0,5,2,2],[15,15,7,6],[10,0,0,0]],
+["KLAP SMANGS HOSPITALITY","Rashi","Active","PCL",[0,0,10,5],[0,0,10,5],[20,0,25,30],[0,0,0,0],[30,0,20,10]],
+["KOFUKU P & A RESTA","Prerna","Active","B&R B",[0,0,0,0],[10,0,5,5],[0,0,0,0],[10,0,3,3],[15,0,3,5]],
+["KOKKINIA UTSAAV CAFE","Samaksh","Active","PCL",[150,0,50,0],[75,0,35,0],[50,0,25,0],[25,0,10,0],[0,0,0,0]],
+["KWALITY RESTT","Samaksh","Active","Fine Dine",[10,0,5,5],[15,0,5,5],[25,0,10,15],[0,0,5,5],[10,0,10,10]],
+["KYLIN RESTAURANT","Rashi","Active","Fine Dine",[10,0,5,5],[0,0,0,0],[10,0,10,10],[0,0,0,0],[5,5,5,5]],
+["LA HOTELS AND RETREATS","Pradeep","Active","Hotels",[10,0,10,0],[0,0,0,0],[10,0,9,0],[5,0,0,0],[10,0,0,0]],
+["LA ISLA BAR AND RESTAURENT","Prerna","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[6,0,2,0],[0,0,0,0],[6,0,0,0]],
+["LAIDBACK CAFÉ","Rashi","Active","PCL",[0,0,0,0],[0,0,0,0],[15,5,5,5],[10,0,2,2],[10,5,2,2]],
+["LAIDBACK CAFE AVENUE","Tripti","Active","Fine Dine",[0,5,3,5],[0,0,0,0],[25,5,10,10],[5,10,10,8],[15,0,5,10]],
+["LAKEVIEW BISTRO","Tripti","Active","PCL",[7,3,0,0],[18,18,3,3],[30,10,5,5],[5,5,0,5],[30,30,5,5]],
+["LAMA KITCHEN","Tripti","Active","Fine Dine",[1,4,0,0],[4,7,0,3],[8,9,3,2],[2,6,4,0],[3,5,0,5]],
+["LANTERNS RESTT.","Pradeep","Active","B&R B",[0,0,0,0],[0,0,0,0],[10,20,0,0],[0,45,0,5],[0,12,0,0]],
+["Lara Bar and Kitchen","Rashi","Active","PCL",[0,0,0,0],[20,0,3,0],[30,5,10,5],[25,15,5,5],[40,0,5,0]],
+["LATANGO JADE LUXURY","Tripti","Active","PCL",[0,0,10,4],[0,0,15,0],[0,0,20,0],[0,0,20,10],[0,0,25,15]],
+["LATOYA MANIFEST HOSPITALITY","Tripti","Active","Fine Dine",[0,0,0,0],[2,0,2,1],[1,0,2,0],[1,0,4,1],[6,0,5,2]],
+["LAZEEZ AFFAIRE First Fiddle","Pradeep","Active","Fine Dine",[10,0,5,5],[0,0,0,0],[50,0,20,15],[0,0,0,0],[20,0,10,0]],
+["LAZEEZ AFFAIRE First Fiddle2","Tripti","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[0,0,0,0],[5,0,5,5],[10,0,10,5]],
+["LAZEEZ AFFAIRS WOLFGANG","Samaksh","Active","Fine Dine",[0,0,0,0],[0,10,5,5],[0,10,0,5],[0,0,0,0],[0,15,7,8]],
+["LE MERIDIEN","Sreebrata","Active","Hotels",[0,0,0,0],[0,0,0,5],[25,0,100,0],[0,0,0,0],[0,0,0,0]],
+["LEELA PALACE","Sreebrata","Active","Hotels",[10,0,10,0],[10,0,20,0],[15,0,25,20],[25,0,30,10],[0,0,15,0]],
+["LEMON TREE PREMIER HYACINTH","Rashi","Active","Hotels",[0,0,0,0],[10,0,10,0],[0,0,0,0],[0,0,0,0],[30,0,30,5]],
+["LEOS RESTAURANT & BAR","Pradeep","Active","B&R A",[20,30,0,0],[0,0,2,0],[25,75,1,0],[0,100,5,0],[20,0,5,0]],
+["LIMITLESS GOLD PETAL","Rashi","Active","PCL",[10,0,0,0],[10,0,5,5],[20,0,5,0],[35,0,10,10],[25,0,8,5]],
+["LIV BAR DELHI","Sreebrata","Active","PCL",[0,0,3,3],[17,0,6,6],[14,0,6,6],[11,0,6,5],[17,5,13,14]],
+["Loca Spago Restaurant","Prerna","Active","Fine Dine",[0,0,0,0],[2,0,2,1],[3,0,1,2],[5,0,3,3],[2,0,0,5]],
+["LOCAL DELHI CAFE & BAR","Samaksh","Active","PCL",[10,10,10,5],[35,35,10,10],[35,35,15,15],[25,55,15,15],[50,80,20,15]],
+["LOCALE","Rashi","Active","PCL",[5,5,0,0],[6,24,0,2],[25,40,4,3],[0,5,3,2],[14,31,3,2]],
+["Locus Daruk Hospital","Prerna","Active","PCL",[0,0,0,0],[5,0,0,0],[3,0,0,0],[10,1,2,0],[5,5,0,0]],
+["LORD OF THE DRINKS First Fiddle1","Rashi","Active","PCL",[17,0,0,0],[0,10,0,0],[0,5,0,0],[0,0,0,0],[0,0,0,0]],
+["LORD OF THE DRINKS EAST","Pradeep","Active","PCL",[6,10,0,0],[6,15,0,5],[6,11,5,0],[10,15,5,5],[15,15,0,0]],
+["LORD OF THE DRINKS RSVK","Samaksh","Active","PCL",[30,30,30,15],[60,60,20,30],[60,50,40,30],[0,0,0,0],[45,115,55,35]],
+["LOTUS LEAF RESTAURANT","Pradeep","Active","FINE DINE",[0,0,0,0],[10,10,5,3],[5,10,5,3],[0,0,0,0],[0,10,0,0]],
+["LOUVE Campbell Resto","Rashi","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[5,0,5,5],[0,0,10,10],[5,0,5,0]],
+["LOVE LIQUOR BAR1","Tripti","Active","B&R C",[8,17,0,0],[7,20,0,0],[7,40,3,0],[13,50,5,0],[15,77,5,0]],
+["LOVE LIQUOR BAR2","Samaksh","Active","B&R A",[0,25,0,0],[0,100,0,0],[0,0,0,0],[0,100,25,0],[0,0,0,0]],
+["LOVE LIQUOR BAR3","Samaksh","Active","B&R A",[0,25,0,0],[0,100,0,0],[0,0,0,0],[0,100,0,0],[0,0,0,0]],
+["LOVE RESTAURANT","Pradeep","Active","B&R C",[10,37,2,0],[27,73,0,0],[0,0,0,0],[18,55,0,0],[0,0,0,0]],
+["LUTYENS BISTRO","Rashi","Active","Fine Dine",[2,0,2,0],[2,0,3,1],[2,0,2,2],[0,0,0,0],[0,2,2,0]],
+["M. HOUZ BEANFEAST","Tripti","Active","PCL",[50,0,30,0],[30,0,5,0],[50,0,30,0],[30,0,10,0],[40,0,17,3]],
+["M/S AMOUR BISTRO","Sreebrata","Active","Fine Dine",[8,0,3,0],[5,0,8,0],[20,0,10,0],[6,0,3,0],[11,0,8,0]],
+["M/S BELLA CIAO","Prerna","Active","B&R B",[5,0,0,0],[5,0,0,3],[5,0,0,1],[5,0,4,1],[11,0,4,0]],
+["M/S BEMISAAL FOOD COURT","Samaksh","Active","Fine Dine",[0,0,0,0],[5,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+["M/S BREATH","Rashi","Active","PCL",[24,0,4,2],[35,0,5,0],[20,0,3,2],[20,0,0,0],[25,0,5,2]],
+["M/S CAFE AFTER HOURS","Rashi","Active","PCL",[40,20,5,0],[30,5,0,0],[20,15,10,0],[10,5,5,0],[30,15,5,0]],
+["M/S DRAMA PIXEL HOSPITALITY","Samaksh","Active","B&R A",[10,0,6,6],[23,0,13,8],[20,0,7,3],[26,0,7,10],[25,0,9,4]],
+["M/S IMPERFECTO CANTEEN","Rashi","Active","PCL",[6,6,5,0],[5,10,5,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+["M/S IVORY UBON POULTRY","Rashi","Active","PCL",[5,0,5,0],[7,0,3,2],[5,0,3,3],[5,2,3,2],[10,6,6,6]],
+["M/S KYLIN EXPERIENCE","Sreebrata","Active","Fine Dine",[0,0,0,3],[5,0,5,5],[10,0,10,5],[5,0,0,5],[10,0,10,10]],
+["M/S LA CROUTE","Tripti","Active","Fine Dine",[0,0,0,2],[1,0,0,0],[2,0,1,1],[1,0,1,1],[2,0,0,1]],
+["M/S LIMIT LESS LOOP","Prerna","Active","PCL",[10,0,0,0],[15,0,3,2],[25,0,11,9],[10,0,3,2],[25,0,7,7]],
+["M/S MIDO FLYING SPARROW","Prerna","Active","PCL",[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,5,5],[7,0,5,2]],
+["M/S MISS NORA","Rashi","Active","Fine Dine",[0,2,0,0],[0,0,0,0],[25,0,10,0],[0,0,0,0],[10,0,0,6]],
+["M/S MY BAR SQUARE","Samaksh","Active","PCL",[25,105,0,0],[40,150,2,2],[40,115,2,2],[60,365,18,2],[90,135,0,5]],
+["M/s Nukkad Cafe Flying Sparrow","Prerna","Active","PCL",[8,0,6,5],[13,0,5,4],[18,0,8,9],[4,0,6,6],[13,0,6,6]],
+["M/S PAUL COMAX","Rashi","Active","Fine Dine",[0,0,0,0],[6,0,4,4],[0,0,0,0],[8,0,4,4],[4,0,4,4]],
+["M/S PIND BALLUCHI VIRSA","Samaksh","Active","Fine Dine",[9,0,4,0],[15,20,5,3],[10,25,3,3],[0,20,3,3],[10,45,3,2]],
+["M/S PIZZA EXPRESS","Rashi","Active","Fine Dine",[5,0,0,2],[2,0,0,2],[0,0,0,0],[12,0,3,0],[0,0,0,4]],
+["M/S PRIDE HOTEL","Rashi","Active","Hotels",[0,0,0,0],[20,0,0,0],[30,0,20,0],[0,0,0,10],[20,0,0,5]],
+["M/S PUNJAB GRILL Lite Bite1","Samaksh","Active","Fine Dine",[0,0,0,0],[10,0,0,2],[10,0,5,5],[0,0,0,0],[5,0,0,0]],
+["M/S SAZ","Rashi","Active","PCL",[0,0,5,0],[8,0,12,0],[4,0,6,3],[0,0,10,0],[5,0,10,5]],
+["M/S SOCIAL AFFAIRE RESTRO BAR","Pradeep","Active","PCL",[5,5,5,0],[8,18,2,0],[13,27,2,0],[8,32,5,2],[37,45,2,1]],
+["M/S THE BIG CHILL","Prerna","Active","Fine Dine",[5,0,0,10],[10,0,5,5],[10,0,0,5],[15,0,5,5],[5,0,5,5]],
+["M/S THE COUNTRY CLUB","Rashi","Active","Social Club",[5,0,5,0],[40,0,10,0],[20,0,5,0],[50,0,20,0],[0,0,0,0]],
+["M/S You Mee Lite Bite1","Tripti","Active","PCL",[4,0,2,4],[8,0,2,0],[0,0,0,2],[0,0,0,0],[6,0,4,2]],
+["M/S You Mee Lite Bite2","Tripti","Active","Fine Dine",[0,0,0,0],[3,5,0,3],[5,3,3,3],[0,0,0,0],[5,5,4,2]],
+["M/S. KAKAPO ROSEBEE","Tripti","Active","PCL",[5,0,0,0],[8,0,10,5],[7,0,7,7],[5,0,5,5],[9,0,6,5]],
+["MALA AKBARI RESTAURANT","Rashi","Active","PCL",[0,0,0,0],[0,0,0,0],[15,3,0,0],[0,0,5,0],[10,0,5,6]],
+["Mardigras By Uncover","Rashi","Active","PCL",[5,0,5,5],[15,0,1,1],[7,0,3,3],[20,0,7,9],[22,0,9,5]],
+["MARRAKESH NIRVANA","Rashi","Active","PCL",[0,0,0,0],[25,0,16,0],[40,0,40,0],[20,0,20,0],[0,0,0,0]],
+["MASSALA SINGH AURAM FOODS","Samaksh","Active","Fine Dine",[0,0,0,0],[0,5,0,0],[15,0,7,0],[0,0,0,0],[5,0,0,2]],
+["MATCH BOX AVV HOSPIT","Tripti","Active","PCL",[0,0,0,0],[0,0,0,0],[550,0,80,20],[230,0,75,10],[290,0,90,30]],
+["Matchis Resto Bar","Pradeep","Active","PCL",[3,7,2,1],[0,0,0,0],[7,14,3,0],[3,16,0,0],[12,29,2,0]],
+["MAURYA SHERTON HOTEL","Sreebrata","Active","Hotels",[0,0,25,25],[50,0,25,25],[150,0,100,60],[0,0,0,0],[0,0,0,0]],
+["Max Out Green Liquor","Tripti","Active","PCL",[10,10,0,0],[5,10,5,2],[10,15,3,2],[0,0,0,0],[0,0,0,0]],
+["MAYFAIR RODISH HOSPI","Prerna","Active","Fine Dine",[30,0,10,10],[40,0,10,10],[70,0,30,20],[0,0,0,0],[40,0,10,0]],
+["MEALODRAMA","Rashi","Active","Fine Dine",[0,0,0,0],[3,0,0,0],[3,0,1,1],[3,0,1,1],[9,0,1,1]],
+["MEALSZONE CAFE Summer House","Tripti","Active","LUXURY PCL",[0,0,10,5],[20,0,45,5],[20,25,60,25],[0,0,40,5],[35,0,55,10]],
+["MESA ARVITIS BISTRO","Sreebrata","Active","PCL",[0,0,5,0],[0,0,5,0],[0,0,5,0],[0,0,0,0],[0,0,0,0]],
+["MESTIZO ESHAAN HOLDINGS","Rashi","Active","Fine Dine",[5,0,5,5],[0,0,0,0],[10,0,10,2],[0,0,0,0],[10,0,2,2]],
+["METRO GRILL RESTAURANT","Pradeep","Active","FINE DINE",[0,5,2,2],[2,7,4,4],[0,15,2,2],[0,5,2,2],[0,5,6,6]],
+["MGM CLUB SOCIETY","Pradeep","Active","Social Club",[5,5,0,0],[10,10,2,0],[15,15,2,1],[0,0,0,0],[10,20,0,0]],
+["MIAMO DINER","Rashi","Active","Fine Dine",[0,0,0,0],[5,0,2,0],[10,0,4,0],[0,0,0,0],[8,0,0,0]],
+["MIAS KAMIA MALHOTRA","Prerna","Active","PCL",[0,0,0,0],[2,0,0,0],[4,0,2,0],[6,0,0,0],[4,0,4,2]],
+["MINAR RESTAURANT","Samaksh","Active","B&R B",[12,0,2,2],[17,0,3,2],[46,0,11,10],[0,25,4,6],[46,0,5,0]],
+["MISOSEXY FIRST FIDDLE","Tripti","Active","LUXURY PCL",[0,0,0,0],[0,0,0,0],[5,0,10,5],[0,0,0,0],[0,0,0,0]],
+["MISS DOOZY ASCENT","Prerna","Active","B&R A",[5,10,0,5],[24,47,11,8],[5,27,0,2],[5,10,0,0],[20,40,4,8]],
+["MISS MARGARITA ARRIBA","Prerna","Active","Fine Dine",[0,0,0,0],[0,0,3,0],[0,0,5,3],[0,0,5,0],[0,0,0,0]],
+["MISS PINTO NIR ADVISORS","Rashi","Active","PCL",[11,0,11,0],[0,8,5,0],[10,0,10,0],[50,0,10,20],[25,0,15,0]],
+["MNC HOSPITALITIES","Prerna","Active","B&R B",[15,5,2,0],[15,14,1,0],[10,10,2,1],[10,15,3,2],[15,10,0,0]],
+["MOCHA CAFÉ AND BAR","Samaksh","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[0,0,0,0],[3,0,5,5],[14,0,0,0]],
+["MODERN GRILL","Pradeep","Active","B&R B",[0,0,0,0],[0,5,4,0],[0,0,0,0],[0,5,2,0],[0,6,0,0]],
+["MOETS BAR-BE-QUE RESTT.","Prerna","Active","Fine Dine",[6,0,3,2],[7,0,3,5],[15,0,2,5],[0,0,4,5],[0,0,0,0]],
+["MONA CAVA NEW LEAF HOSPITALITY","Samaksh","Active","PCL",[20,0,1,0],[21,0,2,2],[48,0,5,5],[15,0,1,2],[5,0,0,0]],
+["MONKEY BAR OLIVE B","Rashi","Active","PCL",[0,0,0,0],[0,0,0,20],[15,0,15,0],[10,0,0,10],[10,0,5,5]],
+["Monsoon The Melting","Sreebrata","Active","PCL",[5,0,3,0],[0,0,0,0],[2,0,2,4],[0,0,0,0],[0,0,0,0]],
+["MOONSHINE BAR AND CAFE","Tripti","Active","PCL",[13,3,0,1],[0,0,0,0],[15,0,0,0],[10,0,0,0],[5,0,0,0]],
+["MOTI MAHAL DELUX C&S","Pradeep","Active","Fine Dine",[0,0,0,0],[10,0,0,0],[10,0,0,0],[5,0,0,0],[5,0,0,0]],
+["Moti Mahal Delux India Food","Prerna","Active","Fine Dine",[3,0,0,0],[0,0,0,0],[3,2,2,2],[2,1,1,1],[3,0,2,2]],
+["MOYE YAKHI DISTRIBUTION1","Tripti","Active","B&R A",[5,15,0,0],[5,18,0,0],[5,30,0,0],[16,45,2,2],[3,45,4,2]],
+["MS ANDREAS EATERY","Tripti","Active","B&R C",[5,0,5,5],[0,0,0,0],[5,0,0,5],[0,0,0,0],[5,0,5,5]],
+["MS DITAS SHRINATHJI","Tripti","Active","PCL",[0,0,0,0],[8,0,4,0],[7,0,7,2],[3,0,0,2],[4,0,3,0]],
+["MS KIPOS FLYING BEE","Rashi","Active","PCL",[8,0,8,5],[3,0,2,2],[19,0,15,13],[0,0,7,5],[10,0,5,0]],
+["Ms Nukkad Cafe Flying Sparrow2","Prerna","Active","PCL",[13,0,5,1],[10,0,5,3],[18,0,13,9],[9,0,5,5],[18,0,13,6]],
+["MS PAUL COMAX","Tripti","Active","Fine Dine",[0,0,0,0],[18,0,0,0],[15,0,6,5],[0,0,5,5],[10,0,5,6]],
+["MS Play Flying Falcon","Tripti","Active","PCL",[0,0,0,0],[7,0,9,9],[30,12,32,25],[5,5,20,15],[35,15,40,20]],
+["MS PUNJAB GRILL Lite Bite2","Prerna","Active","Fine Dine",[4,0,0,0],[0,4,0,0],[4,4,1,0],[0,0,0,0],[2,0,1,1]],
+["MS Punjabgrill Lite Bite3","Prerna","Active","Fine Dine",[0,0,0,0],[7,6,0,0],[2,2,1,1],[0,0,0,0],[2,2,2,2]],
+["MS RED NIR ADVISORY","Rashi","Active","Luxury PCL",[10,0,0,0],[0,0,0,0],[10,0,10,10],[0,0,0,0],[0,0,0,0]],
+["MS VG Bars","Prerna","Active","Fine Dine",[10,5,1,0],[10,15,0,1],[25,50,1,3],[25,55,1,1],[27,65,2,2]],
+["Mugal Mahal Restaurant","Pradeep","Active","B&R B",[0,3,3,0],[8,8,3,0],[10,5,0,0],[0,0,0,2],[0,5,2,6]],
+["MUSIC AND MOUNTAINS","Prerna","Active","PCL",[5,0,2,0],[0,0,4,6],[3,0,1,0],[2,0,2,4],[10,0,3,5]],
+["MUSICAL RESTAURANT Summer House","Tripti","Active","PCL",[46,0,20,16],[70,0,25,20],[125,0,65,25],[30,0,20,5],[90,0,45,30]],
+["My Bar Headquarters Sransh","Samaksh","Active","B&R A",[45,310,0,0],[175,700,0,20],[70,550,35,10],[15,885,5,10],[225,520,15,30]],
+["NAARMA SAMYRA CAFE","Tripti","Active","PCL",[0,0,0,0],[0,0,0,0],[13,0,8,13],[0,0,0,0],[10,0,10,10]],
+["NADOO RESTAURANTS","Tripti","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,2,2],[0,0,11,6]],
+["NAGALANDS KITCHEN","Samaksh","Active","Fine Dine",[0,0,0,0],[15,0,0,5],[15,0,5,5],[0,0,0,0],[10,0,5,5]],
+["Nandos A Unit","Rashi","Active","B&R A",[2,0,4,3],[0,0,0,0],[4,0,2,3],[0,0,0,0],[0,0,0,0]],
+["NANDOS KARNATAKA1","Tripti","Active","Fine Dine",[5,0,3,3],[0,0,0,0],[0,0,0,0],[0,0,0,0],[5,5,3,2]],
+["Nandos Restaurant TFS","Sreebrata","Active","Airport",[21,44,13,14],[24,42,15,5],[21,25,12,13],[2,13,4,4],[0,0,0,0]],
+["NANKING CHINESE","Rashi","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[6,0,2,2]],
+["NAO BY BERCOS","Prerna","Active","Fine Dine",[5,0,1,2],[2,0,1,1],[4,0,2,1],[3,0,0,1],[6,0,2,1]],
+["NARAINA VIHAR CLUB","Sreebrata","Active","Social Club",[5,0,0,0],[10,0,5,0],[25,0,5,0],[20,0,0,0],[40,0,5,0]],
+["NASHEMAN FOOD & BEVERAGES","Pradeep","Active","B&R B",[0,20,0,0],[0,0,0,0],[0,0,0,0],[0,50,2,0],[0,30,0,0]],
+["NATIONAL SPORTS CLUB OF INDIA","Pradeep","Active","Social Club",[0,0,0,0],[0,0,0,0],[100,0,50,0],[0,0,0,0],[35,0,50,0]],
+["NAZRANA SHIVNETRA SHAKTI","Tripti","Active","PCL",[0,0,0,0],[10,20,1,0],[10,44,1,0],[11,34,3,0],[20,74,7,0]],
+["Neptune & Zodiac","Pradeep","Active","Hotels",[0,0,0,0],[7,0,10,2],[20,0,0,0],[20,0,0,10],[15,10,10,0]],
+["NEW FRIENDS CLUB","Tripti","Active","Social Club",[0,0,0,0],[0,0,0,0],[55,0,17,10],[0,0,0,0],[65,0,9,4]],
+["NEW GEN POWER HOSPITALITY","Prerna","Active","FINE DINE",[0,0,0,0],[0,0,2,3],[3,0,3,2],[3,0,3,3],[2,0,2,2]],
+["New Moti Bagh Club","Pradeep","Active","Social Club",[10,0,0,0],[20,0,0,0],[15,0,0,0],[30,0,0,0],[20,0,0,0]],
+["NINETEEN 78","Tripti","Active","PCL",[5,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+["NO VACANCY SPEAKEASY","Prerna","Active","PCL",[11,0,0,0],[8,0,0,0],[27,0,0,0],[0,0,0,0],[12,0,0,0]],
+["NOVOTEL CADDIE HOTELS","Tripti","Active","Hotels",[10,0,15,0],[40,0,25,10],[25,0,50,20],[25,0,20,0],[20,0,25,10]],
+["NUAI CAFE","Sreebrata","Active","Fine Dine",[0,0,0,0],[0,0,10,10],[0,0,12,12],[0,0,0,0],[0,0,12,10]],
+["NUKKAD CAFE FLYING SPARROW2","Rashi","Active","Fine Dine",[18,0,6,5],[28,0,11,7],[25,0,13,10],[10,8,12,10],[40,0,17,14]],
+["OBEROI MAIDENS","Prerna","Active","Hotels",[0,10,5,5],[0,0,0,0],[10,0,10,5],[0,0,0,0],[8,0,0,0]],
+["OBSESSION EGO","Tripti","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[10,0,5,5],[0,0,0,0],[10,0,5,6]],
+["ODDLY YETI EMINENT","Samaksh","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,5,5],[0,0,0,0]],
+["ODELLA","Samaksh","Active","PCL",[0,0,0,0],[5,0,0,0],[10,0,10,10],[0,0,0,0],[0,0,0,0]],
+["OKTHE CHATTER HOUSE","Rashi","Active","PCL",[10,0,5,0],[10,0,5,0],[30,0,10,5],[10,0,5,5],[25,0,10,5]],
+["Olive Bar And Kitchen","Tripti","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[9,0,0,0],[0,0,0,0],[0,0,0,0]],
+["ONE EIGHT SILVERVIEW","Rashi","Active","PCL",[40,0,25,25],[60,0,50,30],[150,0,90,80],[0,0,50,50],[80,0,0,0]],
+["ONE MIDTOWN CONDOMINIUM","Sreebrata","Active","Social Club",[0,0,0,0],[0,0,0,0],[14,0,10,9],[0,0,0,0],[40,0,22,8]],
+["ONLY BAR RESTAURANT1","Tripti","Active","B&R A",[25,230,5,5],[30,180,20,20],[35,160,5,5],[0,180,0,0],[65,235,5,15]],
+["ONLY BAR U/O WHITE PAPER","Tripti","Active","B&R A",[35,220,10,5],[55,180,10,20],[60,210,15,20],[4,300,10,0],[150,130,15,25]],
+["OPEN HOUSE BAR KITCHEN","Samaksh","Active","PCL",[20,15,10,5],[0,20,0,10],[60,0,35,30],[0,20,10,10],[35,30,5,15]],
+["OPHELIA AYESHA HOSPITALITY","Sreebrata","Active","LUXURY PCL",[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,15,15],[15,0,0,0]],
+["ORGANIC BISTRO","Rashi","Active","Fine Dine",[3,0,1,2],[2,0,0,1],[10,0,7,5],[0,0,0,0],[0,0,0,0]],
+["ORIENT TAVERN REST","Rashi","Active","B&R B",[20,0,0,0],[30,0,0,0],[40,0,0,0],[15,0,0,0],[15,0,0,0]],
+["Oso The Panda Club","Prerna","Active","PCL",[15,0,0,0],[15,0,11,0],[0,0,0,0],[0,0,0,0],[3,0,2,0]],
+["OTB CAFE OUT OF THE BOX","Rashi","Active","PCL",[0,0,0,0],[10,0,5,5],[10,10,5,5],[10,5,5,5],[15,10,10,5]],
+["OUT OF THE BOX COURTYARD","Samaksh","Active","B&R A",[10,10,5,5],[20,10,10,5],[10,10,5,5],[2,10,5,5],[10,10,0,0]],
+["OYE PUNJAB LOST RECIPES","Prerna","Active","B&R B",[0,0,0,0],[5,15,1,1],[5,5,1,0],[6,11,3,3],[20,20,0,0]],
+["P.F. CHANGS","Rashi","Active","Fine Dine",[0,0,0,0],[0,0,0,2],[0,0,0,0],[0,0,5,8],[0,0,10,10]],
+["PALACE HEIGHTS","Samaksh","Active","Hotels",[0,0,5,5],[0,0,0,0],[0,0,0,0],[10,0,0,0],[5,0,5,0]],
+["PALIKA SERVICES OFFICERS INSTI","Pradeep","Active","Social Club",[0,0,0,0],[30,0,0,0],[30,0,0,0],[30,0,20,0],[60,0,50,0]],
+["PALM GREEN","Pradeep","Active","Hotels",[0,0,0,0],[0,0,0,0],[150,250,50,0],[0,0,0,0],[0,0,0,0]],
+["PANCH SHILA CLUB","Sreebrata","Active","Social Club",[20,0,5,0],[150,0,60,40],[30,0,20,0],[0,0,0,0],[50,0,30,40]],
+["PAPARIZZA NK ENTERPRISES1","Prerna","Active","Fine Dine",[5,0,1,1],[10,0,2,1],[7,0,1,1],[10,0,1,1],[10,0,3,3]],
+["Paparizza Hospitality Private","Prerna","Active","Fine Dine",[5,0,1,3],[0,0,0,0],[3,0,3,3],[0,0,0,0],[6,0,4,4]],
+["PARIKRAMA RESTT.","Samaksh","Active","Fine Dine",[0,0,5,0],[10,0,5,0],[10,0,0,3],[0,0,0,0],[15,0,10,0]],
+["PARK Apeejay","Samaksh","Active","Hotels",[0,0,0,0],[15,0,30,0],[80,0,90,20],[0,0,0,0],[0,0,0,0]],
+["Park Inn Radisson Lucky Star","Pradeep","Active","Hotels",[0,0,0,0],[15,0,0,0],[20,0,15,0],[25,0,15,0],[0,0,0,0]],
+["PARK PLAZA","Pradeep","Active","Hotels",[10,0,5,0],[20,0,0,0],[40,0,13,0],[0,0,0,0],[0,0,0,0]],
+["PASCHIM VIHAR CLUB","Pradeep","Active","Social Club",[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+["PASTA STREET INDIA","Rashi","Active","Fine Dine",[0,0,0,0],[2,2,2,4],[0,3,0,0],[0,5,6,5],[5,3,5,3]],
+["PCO RESTAURANT","Tripti","Active","Luxury Fine Dine",[10,0,10,0],[13,0,13,13],[20,0,20,20],[10,0,20,20],[30,0,20,20]],
+["PEBBLE STREET1","Tripti","Active","PCL",[25,0,6,3],[20,0,6,6],[65,0,20,10],[20,0,10,12],[25,0,25,10]],
+["Pebble Street2","Prerna","Active","PCL",[0,4,3,2],[0,0,0,0],[0,0,0,0],[0,2,3,2],[0,3,0,0]],
+["PEGS N PINT","Tripti","Active","B&R B",[0,5,0,0],[0,0,0,0],[5,5,0,0],[5,7,0,0],[10,12,0,0]],
+["People Of Tomorrow Greenr","Rashi","Active","PCL",[0,0,0,0],[0,0,0,0],[4,0,5,1],[0,0,6,0],[5,0,8,0]],
+["PERCH WHITE WATER CAFE","Rashi","Active","PCL",[0,0,0,0],[0,0,0,0],[20,0,0,0],[0,0,0,0],[20,0,0,0]],
+["PERCH WINE & COFFEE BAR1","Rashi","Active","PCL",[0,0,0,0],[10,0,0,0],[10,0,0,0],[15,0,5,0],[20,0,0,0]],
+["PERCH WINE & COFFEE BAR2","Rashi","Active","Fine Dine",[5,0,0,0],[5,0,0,0],[10,0,0,0],[10,0,0,0],[0,0,0,0]],
+["PETE'S DELI CHICABILLI","Prerna","Active","Fine Dine",[0,0,0,0],[3,0,0,0],[4,0,3,3],[3,0,2,2],[4,0,4,4]],
+["PICCADILY HOTELS","Samaksh","Active","Hotels",[10,0,0,0],[10,0,20,10],[20,0,10,0],[20,0,10,10],[0,0,0,0]],
+["PIKWIK RESTAURANT","Pradeep","Active","Fine Dine",[0,0,0,0],[10,10,5,0],[0,0,0,0],[10,15,0,0],[0,25,5,0]],
+["PINCH OF SALT JINDAL RESTAURANT","Pradeep","Active","Fine Dine",[0,0,0,0],[10,15,5,0],[50,35,15,5],[0,0,0,0],[0,0,10,10]],
+["PIND BALLUCHI JS HOSPITALITY","Pradeep","Active","B&R A",[0,10,1,1],[0,0,0,0],[10,25,2,2],[0,0,0,0],[10,30,2,2]],
+["Pind Balluchi Virsa Cuisine","Rashi","Active","B&R A",[4,0,2,2],[0,0,0,0],[5,3,6,5],[0,5,5,0],[9,6,3,4]],
+["Pind Balluchi Rest","Tripti","Active","B&R B",[4,7,1,1],[5,12,0,0],[7,12,0,0],[2,10,1,1],[5,12,0,0]],
+["PIND BALLUCHI RESTAURANT","Tripti","Active","Fine Dine",[6,0,0,0],[0,0,0,0],[6,0,2,0],[0,0,0,0],[0,0,0,0]],
+["PIND BALLUCHI TANVEER","Samaksh","Active","Fine Dine",[5,0,5,0],[5,0,0,0],[5,5,0,0],[5,0,5,0],[5,5,0,0]],
+["Pindballuchi Grills & Plat","Tripti","Active","Fine Dine",[0,0,0,0],[15,4,4,2],[15,5,4,2],[0,0,0,0],[15,5,0,5]],
+["PINDI RESTAURANT","Pradeep","Active","Fine Dine",[3,0,3,0],[0,0,6,0],[0,0,5,0],[0,0,3,6],[6,3,6,3]],
+["PIONEERS RESTAURANT","Samaksh","Active","Fine Dine",[10,0,0,3],[0,15,5,0],[20,15,0,0],[10,0,5,5],[10,30,0,0]],
+["PIRATES OF GRILL A UNIT","Rashi","Active","B&R A",[0,0,0,0],[0,0,0,0],[10,5,0,5],[10,5,5,0],[0,0,0,0]],
+["PITAMPURA CLUB","Pradeep","Active","Social Club",[0,0,0,0],[0,0,0,0],[25,25,3,0],[0,15,10,0],[10,0,15,10]],
+["PIZZA EXPRESS","Rashi","Active","Fine Dine",[0,0,4,4],[0,0,0,0],[8,0,0,0],[0,0,0,0],[0,0,0,0]],
+["PLOOF RESTAURANT","Pradeep","Active","Fine Dine",[0,0,5,5],[5,0,5,5],[10,0,10,5],[5,0,5,5],[5,0,5,5]],
+["PLUM BY BENT CHAIR","Sreebrata","Active","PCL",[10,0,0,5],[10,20,10,10],[40,0,25,25],[0,0,5,10],[30,0,20,10]],
+["PRESS CLUB OF INDIA","Sreebrata","Active","Social Club",[0,0,0,0],[50,0,0,0],[130,0,50,0],[0,0,0,0],[150,0,50,0]],
+["PRIVEE","Sreebrata","Active","PCL",[75,0,50,0],[125,0,60,0],[160,0,80,25],[75,0,85,5],[115,0,70,10]],
+["PRIVYA RED PEPPRIKA","Pradeep","Active","Fine Dine",[10,0,0,5],[10,0,2,0],[55,0,10,9],[0,0,5,0],[0,0,3,7]],
+["PULLMAN CADDIE HOTELS","Tripti","Active","Hotels",[20,0,25,0],[60,0,80,20],[45,0,40,20],[30,0,10,0],[20,0,40,20]],
+["PULSE RESTAURANT","Rashi","Active","Fine Dine",[10,0,0,0],[0,0,0,0],[0,0,0,0],[25,0,5,5],[0,0,0,0]],
+["PUNJAB GRILL Lite Bite3","Tripti","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[3,5,3,0],[0,0,0,0],[20,20,10,10]],
+["PUNJAB GRILL Lite Bite4","Sreebrata","Active","Fine Dine",[0,0,5,0],[10,10,5,5],[5,10,10,15],[0,0,0,0],[5,10,0,0]],
+["Punjab Grill Lite Bite5","Tripti","Active","Fine Dine",[0,0,0,0],[2,2,0,0],[0,0,0,0],[0,0,0,0],[2,2,2,1]],
+["PUNJAB GRILL Lite Bite6","Rashi","Active","Fine Dine",[3,1,3,2],[4,4,0,0],[2,3,0,2],[0,0,0,0],[3,3,2,2]],
+["PUNJABI BAGH CLUB","Rashi","Active","Social Club",[0,0,0,0],[20,10,15,0],[75,20,50,0],[0,0,0,0],[0,0,0,0]],
+["PUNTER HOUSE CAFE","Rashi","Active","B&R B",[0,5,0,0],[3,2,2,2],[23,18,0,2],[5,15,3,2],[4,22,0,0]],
+["PURATAN RESTAURANT","Pradeep","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[5,5,0,0],[0,15,5,0],[0,18,0,0]],
+["PYRAMIDS TONINO MG ROAD","Samaksh","Active","Luxury PCL",[0,0,0,0],[0,0,0,4],[8,0,4,8],[0,0,9,0],[5,0,0,4]],
+["QBA RESTAURANT & BAR","Samaksh","Active","B&R B",[0,0,0,0],[5,0,5,5],[25,0,12,25],[6,0,10,0],[35,0,20,25]],
+["QD ROULADE","Prerna","Active","B&R B",[3,6,3,2],[5,9,0,0],[11,18,6,3],[8,5,6,4],[9,18,4,3]],
+["QLA QUTAB ENTERTAINMENT","Tripti","Active","LUXURY PCL",[0,0,2,3],[10,0,2,7],[20,0,7,8],[0,0,0,0],[0,0,0,0]],
+["QUISINE HOSPITALITY","Rashi","Active","B&R B",[10,40,0,0],[30,70,0,0],[0,0,0,0],[15,75,10,0],[20,80,5,0]],
+["QUTAB GOLF COURSE","Rashi","Active","Social Club",[5,0,10,5],[10,0,20,20],[40,0,15,10],[25,0,25,10],[40,0,5,10]],
+["Qutab Golf Course Driving Range","Rashi","Active","Social Club",[0,0,5,5],[5,0,8,10],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+["R2 RESTO BAR PAHAR GANJ","Pradeep","Active","PCL",[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+["RAASTA AMAN AMBROS","Prerna","Active","PCL",[5,5,0,0],[0,0,0,0],[5,20,5,2],[5,10,3,3],[10,14,3,0]],
+["RADDISON BLU PLAZA","Rashi","Active","Hotels",[0,0,0,0],[0,0,0,0],[100,0,80,30],[0,0,0,0],[80,0,40,50]],
+["RADIO STATION FOODAHOLIC","Prerna","Active","PCL",[0,0,0,0],[17,0,8,5],[30,0,13,7],[0,0,0,0],[15,0,10,5]],
+["RADISSION BLU1","Prerna","Active","Hotels",[15,0,5,5],[35,0,15,5],[28,0,14,14],[40,0,0,0],[30,0,35,20]],
+["RADISSION PASCHIM VIHAR","Pradeep","Active","Hotels",[0,0,0,0],[0,0,0,0],[20,0,50,10],[0,0,0,0],[0,0,0,0]],
+["RADISSON BLU MARINA HOTEL","Samaksh","Active","Hotels",[10,0,5,6],[8,0,8,0],[10,0,10,4],[0,0,0,0],[10,0,8,5]],
+["Raiya RAIYSATH Hospitality","Tripti","Active","Fine Dine",[1,0,1,0],[0,0,0,0],[0,0,0,0],[1,0,3,3],[8,0,5,4]],
+["RASAYYAH DEV KUSUM FOODS","Pradeep","Active","Fine Dine",[2,0,0,0],[0,0,1,2],[2,0,1,0],[1,0,0,0],[1,0,1,1]],
+["RDX RELOADED SURYA FOOD","Rashi","Active","B&R C",[0,0,5,3],[10,15,5,5],[0,0,0,0],[0,20,5,5],[20,20,0,0]],
+["RED CHILLI F & B SERVICE","Sreebrata","Active","PCL",[10,10,0,0],[5,5,2,0],[10,10,1,0],[15,20,4,0],[20,15,4,0]],
+["RED CHILLI RESTT.","Samaksh","Active","B&R B",[0,0,0,0],[5,5,0,0],[5,10,0,0],[17,15,1,0],[0,10,0,0]],
+["REGENT RESTAURANT","Samaksh","Active","B&R C",[30,30,0,2],[40,50,5,5],[120,100,5,5],[0,0,0,0],[20,0,5,5]],
+["REHAB TATVA HOSPITALITY","Prerna","Active","PCL",[9,7,2,1],[0,0,0,0],[16,15,3,3],[9,9,4,0],[16,16,4,1]],
+["REVE LICORNE HOSPI","Sreebrata","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[5,0,4,14],[6,0,6,0],[6,0,0,0]],
+["Rhaas Pub & Lounge","Pradeep","Active","PCL",[0,6,1,0],[4,14,2,0],[6,9,1,0],[0,0,0,0],[0,0,0,0]],
+["RICHES TOMTECH","Prerna","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[0,0,0,0],[3,0,3,2],[5,0,5,2]],
+["RIVER SIDE SPORTS CLUB","Pradeep","Active","Social Club",[7,0,3,0],[17,0,2,0],[12,0,2,0],[10,0,5,0],[57,0,0,0]],
+["RIZQ SHR HOSPITALITY","Prerna","Active","PCL",[5,4,3,3],[5,0,2,3],[22,0,10,3],[0,0,0,0],[0,0,0,0]],
+["ROCKERS AND SHOCKERS","Pradeep","Active","B&R B",[1,6,1,0],[6,10,0,0],[4,5,0,0],[0,0,0,0],[0,0,0,0]],
+["ROCKERS RESTO N BAR","Pradeep","Active","B&R B",[0,15,4,2],[0,10,0,0],[0,50,1,1],[0,40,2,2],[0,10,0,0]],
+["ROCKING WOODS VAIDYAWAN","Pradeep","Active","B&R C",[4,7,0,0],[4,22,2,2],[5,40,0,0],[0,0,0,0],[9,36,0,0]],
+["Romeo Lane Being FS","Prerna","Active","PCL",[0,0,0,0],[0,0,0,0],[15,0,10,0],[10,0,10,0],[0,0,0,0]],
+["ROOH AVEENASHI HOSPITALITY","Tripti","Active","PCL",[5,0,0,4],[5,0,5,5],[6,0,6,0],[0,0,3,3],[3,0,3,3]],
+["ROOHANI GOLDEN TOUCH","Prerna","Active","B&R A",[60,0,10,4],[75,0,6,2],[72,0,11,3],[74,30,15,7],[129,0,17,7]],
+["ROSEATE HOUSE","Sreebrata","Active","Hotels",[5,0,5,5],[10,0,20,20],[29,0,26,26],[0,0,25,20],[25,0,5,5]],
+["Royal Restaurant Paharganj","Pradeep","Active","B&R C",[6,11,0,0],[5,10,0,0],[5,5,0,0],[0,0,0,0],[3,8,0,0]],
+["Sababa","Sreebrata","Active","PCL",[10,0,25,5],[20,0,15,0],[10,0,40,0],[20,0,20,10],[30,0,45,5]],
+["SAFDERJANG CLUB","Rashi","Active","Social Club",[0,0,0,0],[25,0,5,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+["Sams Restaurant","Pradeep","Active","B&R C",[6,7,0,0],[3,6,0,0],[8,12,0,0],[0,0,0,0],[11,11,0,0]],
+["SANA-DI-GE GOLDFINCH HOTELS","Pradeep","Active","PCL",[5,0,5,5],[5,0,5,0],[20,0,10,10],[0,0,0,0],[5,0,5,5]],
+["SANDOZ RESTAURANT1","Rashi","Active","Fine Dine",[0,0,0,0],[20,0,0,0],[50,0,20,10],[0,0,0,0],[20,0,0,5]],
+["SANDOZ RESTAURANT2","Prerna","Active","Fine Dine",[0,0,0,0],[50,0,0,0],[70,0,30,15],[0,0,0,0],[30,0,5,5]],
+["SANDOZ RESTAURANT3","Tripti","Active","Fine Dine",[0,0,0,0],[40,0,10,10],[60,0,25,10],[0,0,0,0],[20,0,0,0]],
+["SANDOZ RESTAURANT4","Tripti","Active","Fine Dine",[0,0,0,0],[30,0,10,5],[40,0,20,10],[0,0,0,0],[30,0,0,5]],
+["SANDOZ RESTAURANTS PVT1","Tripti","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[50,0,20,10],[0,0,0,0],[0,0,0,0]],
+["SANDOZ RESTAURANTS PVT2","Tripti","Active","Fine Dine",[0,0,0,0],[20,0,0,0],[40,0,10,10],[0,0,0,0],[0,0,0,0]],
+["SANDOZ RESTAURANTS PVT3","Tripti","Active","Fine Dine",[0,0,0,0],[50,0,20,10],[80,0,30,15],[0,0,0,0],[50,0,20,0]],
+["Sandoz Restaurant5","Samaksh","Active","Fine Dine",[0,0,0,0],[30,0,0,5],[40,0,25,15],[0,0,0,0],[32,0,5,0]],
+["Sandoz Restaurant6","Tripti","Active","Fine Dine",[0,0,0,0],[30,0,0,0],[60,0,20,15],[0,0,0,0],[0,0,0,0]],
+["SANDOZ RESTAURANTS PVT4","Prerna","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[45,0,10,10],[0,0,0,0],[30,0,0,0]],
+["SANDOZ RESTAURANTS PVT5","Tripti","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[50,0,20,10],[0,0,0,0],[0,0,0,0]],
+["SANDOZ RESTAURANTS PVT6","Tripti","Active","Fine Dine",[0,0,0,0],[20,0,0,0],[40,0,10,10],[0,0,0,0],[0,0,0,0]],
+["SAROOR HH MAHADEV1","Tripti","Active","B&R A",[0,0,0,0],[0,0,0,0],[0,0,0,0],[3,8,2,3],[2,17,2,2]],
+["SARVA PRIYA CLUB","Rashi","Active","Social Club",[5,0,5,0],[0,0,0,0],[20,0,10,0],[0,0,0,0],[20,0,5,0]],
+["SASSY OSCAR OCEANLEA","Rashi","Active","PCL",[0,0,0,0],[0,0,0,0],[4,4,0,0],[12,0,5,0],[10,0,5,0]],
+["SASTI MASTI QUEST SPIRITS","Pradeep","Active","B&R C",[5,9,1,1],[5,8,0,0],[9,23,2,0],[12,28,0,1],[18,30,0,0]],
+["SAZY BEAR MAD FOOD","Prerna","Active","Fine Dine",[0,0,2,2],[11,0,2,2],[7,4,4,0],[7,2,0,2],[10,4,3,0]],
+["SEOUL RESTAURANT","Prerna","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[0,0,3,0],[0,0,0,0],[0,0,3,0]],
+["SEVEN SEAS HOTEL","Pradeep","Active","Hotels",[0,0,0,0],[10,0,30,0],[10,0,0,0],[25,0,25,0],[10,0,50,0]],
+["SHALIMAR BAGH CLUB","Pradeep","Active","Social Club",[0,0,0,0],[40,0,20,0],[50,0,0,0],[40,0,10,0],[105,0,50,0]],
+["SHANGRI-LA HOTEL","Sreebrata","Active","Hotels",[15,0,0,20],[40,0,40,25],[100,0,110,50],[0,0,25,30],[95,0,60,40]],
+["SINGLE SHOT BOWLING","Pradeep","Active","B&R B",[0,23,0,0],[5,40,2,0],[4,25,2,1],[0,32,1,1],[3,56,3,3]],
+["SKY HIGH HOPS HOSPITALITY","Prerna","Active","PCL",[5,0,0,0],[10,0,5,0],[20,0,10,0],[10,0,5,5],[20,0,5,3]],
+["SKY HIGH TANUK HOSPITALITY","Rashi","Active","PCL",[10,0,0,5],[15,0,0,0],[40,0,5,0],[20,0,10,10],[20,0,10,0]],
+["Sky Rozo","Samaksh","Active","PCL",[10,0,0,0],[5,0,5,5],[11,0,2,0],[5,0,2,3],[25,0,5,5]],
+["SMAASH ENTERTAINMENT","Prerna","Active","PCL",[0,0,0,0],[0,0,0,0],[7,0,15,0],[0,0,5,0],[20,0,0,0]],
+["Smokey Lounge Cafe","Rashi","Active","PCL",[5,0,1,1],[6,0,2,2],[11,0,4,4],[11,0,2,2],[12,0,4,2]],
+["SOCIAL AND TINUR EPIPHANY","Tripti","Active","PCL",[0,0,0,0],[0,0,10,10],[0,0,20,10],[0,0,0,0],[0,0,0,0]],
+["SODA SHOPP ELR SAVORS","Rashi","Active","Fine Dine",[0,0,0,0],[5,0,0,0],[20,0,15,15],[0,0,0,0],[15,0,0,0]],
+["SOHO DELHI STRIKER","Tripti","Active","Fine Dine",[120,0,150,0],[0,0,0,0],[100,0,65,5],[0,0,0,0],[160,0,150,10]],
+["SOMEWHERE RESTAURANT","Samaksh","Active","Fine Dine",[8,8,3,3],[5,18,2,3],[24,28,13,12],[5,5,0,0],[7,23,10,12]],
+["SOMRAS BHAVYA INFOWAY","Pradeep","Active","PCL",[10,30,0,0],[0,0,0,0],[0,35,2,0],[20,55,2,0],[20,55,2,0]],
+["SONIDO HILL LIGHT RESTAURANT","Tripti","Active","PCL",[5,7,2,0],[17,11,2,1],[18,13,2,3],[13,2,1,1],[3,11,2,1]],
+["SPICE COURT","Sreebrata","Active","B&R B",[0,0,0,0],[5,13,0,0],[0,24,0,0],[6,59,4,2],[6,29,0,0]],
+["Spice Marbet","Tripti","Active","B&R B",[6,0,4,0],[9,0,4,0],[10,0,4,0],[15,0,8,0],[10,0,0,0]],
+["SPINNS RESTAURANT VIKASPURI","Sreebrata","Active","B&R C",[5,5,1,0],[5,8,2,1],[15,37,8,0],[10,25,0,0],[30,40,2,0]],
+["Staple Scran","Prerna","Active","PCL",[2,0,2,4],[0,0,0,0],[3,5,8,6],[5,0,0,0],[0,0,0,0]],
+["Street Burger TFS Gurgaon","Sreebrata","Active","Airport",[5,35,10,6],[10,26,12,3],[30,51,17,6],[4,38,3,4],[28,46,15,8]],
+["Sukoon Cafe D Mama","Prerna","Active","B&R B",[0,0,0,0],[0,0,0,0],[0,10,0,0],[0,5,0,0],[3,13,0,0]],
+["SUMMER HOUSE CAFE","Tripti","Active","PCL",[75,0,45,30],[290,0,75,45],[540,0,140,80],[100,0,60,20],[130,0,110,80]],
+["SUPREME COURT BAR CO-OPERATIVE","Samaksh","Active","Social Club",[0,0,3,2],[5,0,0,0],[5,3,5,5],[5,0,3,5],[5,5,5,5]],
+["SURAVIE TNA ENTERPRENEUR","Prerna","Active","Fine Dine",[10,5,0,0],[0,0,5,5],[0,10,0,0],[10,0,0,0],[0,10,0,0]],
+["SURIBACHI REHPL","Rashi","Active","Fine Dine",[10,0,0,0],[12,0,6,0],[30,0,8,3],[20,0,12,6],[0,0,0,0]],
+["SURUR DDAAK HOSPITALITY","Pradeep","Active","B&R B",[0,0,0,0],[0,0,0,0],[0,0,0,0],[3,19,2,0],[9,11,0,0]],
+["SWAGATH RESTT.","Prerna","Active","Fine Dine",[0,0,0,0],[55,65,15,10],[65,70,15,15],[70,30,10,10],[40,50,10,10]],
+["T LOUNGE RESTAURANT DOM","Sreebrata","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[0,0,10,0],[0,0,0,0],[0,0,0,0]],
+["T LOUNGE RESTAURANT INTL","Sreebrata","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[3,0,8,0],[0,0,0,0],[0,0,0,0]],
+["TAJ MAHAL IHCL","Sreebrata","Active","Hotels",[0,0,0,0],[25,0,25,0],[0,0,0,0],[40,0,50,50],[0,0,0,0]],
+["TAJ PALACE IHCL","Sreebrata","Active","Hotels",[0,0,0,0],[30,0,120,0],[0,0,0,0],[0,0,0,0],[10,0,40,0]],
+["TALLI STATION1","Pradeep","Active","B&R A",[0,0,0,0],[3,12,0,0],[4,22,1,0],[4,19,2,0],[3,12,1,0]],
+["TALLI STATION2","Sreebrata","Active","B&R A",[0,0,0,0],[8,31,2,0],[8,48,1,0],[8,57,4,0],[3,16,2,0]],
+["TALLI STATION COURTYARD","Prerna","Active","PCL",[0,0,0,0],[5,15,1,1],[16,14,3,2],[8,14,2,0],[3,23,2,2]],
+["TALLI STATION JANAKPURI","Samaksh","Active","B&R A",[0,0,0,0],[6,25,2,0],[6,56,2,0],[7,59,3,0],[3,16,2,0]],
+["TALLI STATION NSP","Prerna","Active","B&R B",[0,0,0,0],[7,28,3,0],[8,43,0,0],[11,46,1,1],[3,16,1,0]],
+["TAMASHA WHOLESOME NUTRITION","Samaksh","Active","PCL",[15,10,0,5],[45,20,10,10],[45,25,15,20],[20,20,10,10],[40,31,10,10]],
+["TASHAN BAR AND LOUNGE","Pradeep","Active","B&R A",[7,7,0,0],[0,0,0,0],[0,0,0,0],[2,4,0,0],[0,0,0,0]],
+["TATVA HOSPITALITY","Tripti","Active","PCL",[0,0,0,0],[15,0,0,0],[30,0,0,0],[0,0,6,0],[20,0,0,0]],
+["TEAM A&P TIUTILITIES","Pradeep","Active","B&R B",[0,4,1,1],[2,7,1,1],[5,18,3,3],[0,25,2,2],[4,22,2,4]],
+["TEDDY BOY First Fiddle","Samaksh","Active","PCL",[10,5,5,5],[0,0,0,0],[10,15,0,10],[0,0,0,0],[15,10,15,10]],
+["TELEGRAM POSTAL CAFE","Prerna","Active","FINE DINE",[5,0,5,5],[10,0,5,5],[0,0,0,0],[18,0,7,6],[18,0,10,0]],
+["TEO THE DINEROOM","Rashi","Active","PCL",[15,0,0,0],[20,0,3,2],[35,10,0,0],[20,10,5,0],[10,15,0,0]],
+["TESORO MIO KITCHEN","Pradeep","Active","Fine Dine",[0,0,0,0],[2,7,1,0],[2,17,1,0],[0,0,0,0],[7,2,1,0]],
+["TG HOTELS LLP","Tripti","Active","PCL",[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[25,0,25,0]],
+["TGI Fridays Feastary","Samaksh","Active","PCL",[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[5,5,5,5]],
+["THAI HIGH RESTAURANT","Tripti","Active","Fine Dine",[0,0,0,0],[10,0,5,5],[30,0,10,10],[0,0,0,0],[10,0,5,5]],
+["THALAVIA RSVP GOURMET","Tripti","Active","B&R A",[7,0,5,5],[10,0,5,0],[25,0,20,5],[18,0,20,20],[20,0,10,0]],
+["THE ASHOK","Tripti","Active","Hotels",[0,0,0,0],[45,0,10,0],[43,0,20,0],[0,0,20,0],[12,0,0,0]],
+["THE AUTUMN HOUSE","Pradeep","Active","PCL",[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[15,0,10,10]],
+["THE BACKYARD SLURP HOSPITALITY","Rashi","Active","Fine Dine",[10,0,5,5],[5,0,10,5],[15,0,10,5],[15,0,10,5],[25,0,15,5]],
+["THE BAR FACTORY","Prerna","Active","B&R A",[10,20,0,0],[10,20,5,0],[10,20,0,0],[20,60,10,0],[20,60,0,0]],
+["THE BEER CAFE BTB1","Samaksh","Active","PCL",[0,0,0,0],[7,2,6,6],[11,11,4,3],[0,0,0,0],[7,7,4,5]],
+["THE BEER CAFE BTB2","Samaksh","Active","PCL",[0,0,0,0],[6,2,6,6],[12,11,4,2],[0,0,0,0],[0,7,0,1]],
+["THE BEER CAFE BTB3","Pradeep","Active","PCL",[0,0,0,0],[6,2,5,4],[7,7,2,6],[0,0,0,0],[7,7,5,5]],
+["THE BEER CAFE BTB4","Tripti","Active","PCL",[0,0,0,0],[6,2,6,6],[8,8,0,0],[0,0,0,0],[3,3,3,4]],
+["The Beer Cafe BTB5","Rashi","Active","PCL",[0,0,0,0],[6,2,5,4],[8,8,2,4],[0,0,0,0],[6,6,4,4]],
+["The Beer Cafe BTB6","Tripti","Active","PCL",[0,0,0,0],[6,2,5,4],[7,6,2,3],[0,0,0,0],[3,6,4,4]],
+["THE BEER CAFE BTB7","Rashi","Active","PCL",[0,0,0,0],[7,3,6,5],[10,9,2,5],[0,0,0,0],[6,6,5,5]],
+["THE BEER CAFE BTB8","Tripti","Active","PCL",[0,0,0,0],[5,2,5,4],[8,7,4,2],[0,0,0,0],[4,4,4,4]],
+["The Beer Cafe Hoppy1","Prerna","Active","B&R A",[4,4,2,0],[6,4,4,4],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+["THE BEER CAFE BTB9","Prerna","Active","PCL",[0,0,0,0],[6,3,5,4],[3,9,0,2],[0,0,0,0],[5,5,2,4]],
+["THE BEER CAFE BTB10","Rashi","Active","PCL",[0,0,0,0],[8,2,6,6],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+["THE BEER CAFE BTB Main","Sreebrata","Active","PCL",[0,0,0,0],[10,4,8,7],[21,19,9,11],[0,0,0,0],[16,16,11,11]],
+["The Big Chill Cafe2","Prerna","Active","Fine Dine",[5,0,0,0],[5,0,5,5],[5,0,5,5],[0,0,5,10],[10,0,5,5]],
+["THE BLUE DOOR CAFE","Rashi","Active","PCL",[0,0,0,0],[3,0,3,0],[2,0,2,0],[3,0,3,3],[8,0,2,5]],
+["THE CHATTER HOUSE","Tripti","Active","PCL",[10,0,0,0],[13,0,8,5],[25,0,10,10],[10,0,3,5],[20,20,10,5]],
+["THE DOM LOUNGE DINE AND BAR","Rashi","Active","PCL",[0,0,0,0],[10,0,5,3],[0,0,0,0],[0,0,0,0],[20,10,5,0]],
+["THE DRUNKYARD CAFE","Pradeep","Active","PCL",[5,5,0,0],[5,5,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+["THE EMPERIOUS CLUB CDH","Rashi","Active","Social Clubs",[0,0,0,0],[0,0,0,0],[0,0,0,0],[4,2,7,7],[4,5,2,3]],
+["THE FLYING SAUCER CAFE","Tripti","Active","PCL",[0,0,20,5],[0,0,30,10],[10,0,30,10],[0,0,20,15],[0,0,55,25]],
+["The Foreign Correspondents Club","Pradeep","Active","Social Club",[0,0,0,0],[20,0,5,0],[20,0,5,0],[0,0,0,0],[20,0,5,5]],
+["THE G T ROAD","Samaksh","Active","Fine Dine",[10,0,5,6],[0,0,0,0],[13,0,5,5],[0,0,0,0],[12,0,5,0]],
+["The Game Palacio","Tripti","Active","PCL",[10,0,0,0],[20,0,20,5],[20,0,20,10],[20,0,0,0],[40,0,25,10]],
+["THE GRAND","Rashi","Active","Hotels",[0,0,0,0],[55,0,30,12],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+["THE HEAVEN BOX HKV","Tripti","Active","B&R A",[15,5,0,0],[15,10,0,0],[35,10,0,0],[0,0,0,0],[15,15,0,0]],
+["THE HOST RESTT.","Samaksh","Active","B&R B",[0,10,5,0],[0,15,0,0],[0,30,5,0],[0,0,0,0],[0,30,5,0]],
+["THE HUB","Pradeep","Active","B&R C",[0,0,0,0],[0,0,0,0],[40,0,30,0],[50,0,0,0],[25,0,25,0]],
+["THE IMPERIAL SPICE","Samaksh","Active","PCL",[0,0,0,0],[0,0,0,0],[10,5,0,0],[0,0,0,0],[5,10,8,8]],
+["THE IMPERIAL AKOI SAAB","Samaksh","Active","Hotels",[0,0,15,0],[4,0,0,0],[12,0,30,8],[0,0,0,0],[8,0,25,8]],
+["THE IRISH HOUSE PCL","Tripti","Active","PCL",[15,10,5,5],[15,20,5,5],[57,74,12,12],[0,0,10,10],[20,35,0,10]],
+["THE KNOT SIMPATICO","Tripti","Closed","PCL",[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+["THE LALIT","Sreebrata","Active","Hotels",[0,0,0,0],[50,0,50,10],[55,0,25,10],[45,0,45,10],[75,0,25,10]],
+["THE LEELA AMBIENCE CONVENTION","Pradeep","Active","Hotels",[50,0,0,0],[60,0,19,14],[150,0,100,10],[100,0,0,0],[5,0,5,15]],
+["THE LODHI","Rashi","Active","Hotels",[20,0,0,0],[0,0,0,0],[10,0,60,0],[0,0,10,0],[20,0,20,0]],
+["THE Maharaja Lounge Encalm","Sreebrata","Active","Fine Dine",[20,0,0,0],[0,0,4,0],[80,0,0,0],[0,0,0,0],[0,0,0,0]],
+["The Market Place AVE","Rashi","Active","PCL",[0,0,0,0],[5,5,0,0],[0,0,0,0],[5,5,0,0],[0,0,0,0]],
+["THE METROPOLITAN","Samaksh","Active","Hotels",[10,0,0,0],[10,0,10,0],[10,0,0,0],[0,0,0,0],[10,0,10,0]],
+["THE MISSION BAY SAN FRANCISCO","Tripti","Active","Fine Dine",[0,0,0,0],[0,0,3,0],[5,0,3,0],[0,0,3,0],[5,0,2,0]],
+["THE MOHANS MULTICUISINE","Pradeep","Active","B&R C",[0,0,0,0],[0,10,0,0],[0,15,0,0],[0,30,0,0],[0,20,0,0]],
+["THE PIANO MAN INNOVATIVE CAFES1","Rashi","Active","PCL",[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+["THE PIANO MAN INNOVATIVE CAFES2","Tripti","Active","Fine Dine",[22,0,0,0],[8,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,13,8]],
+["THE PINT ROOM","Rashi","Active","PCL",[3,0,0,0],[0,0,0,0],[8,0,0,0],[0,0,0,0],[12,0,4,0]],
+["The Post Office M/S","Rashi","Active","PCL",[0,0,0,0],[0,0,0,0],[0,0,2,0],[5,0,2,0],[15,0,2,0]],
+["THE POTBELLY BIHARI KITCHEN","Tripti","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[8,0,6,6],[0,0,0,0],[5,0,4,2]],
+["THE PRIZM HOSPITALITY","Rashi","Active","B&R B",[0,0,0,0],[0,10,0,0],[5,8,2,0],[0,10,0,0],[0,10,4,0]],
+["THE RECORD ROOM","Tripti","Active","PCL",[60,20,9,4],[85,18,13,3],[92,15,11,4],[50,15,13,2],[45,18,4,2]],
+["THE ROSEATE","Rashi","Active","Hotels",[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+["THE ROYAL PLAZA","Samaksh","Active","Hotels",[0,0,0,0],[0,0,0,0],[0,0,25,0],[0,0,0,0],[0,0,0,0]],
+["The Sunday House ELR","Rashi","Active","Fine Dine",[5,0,0,5],[5,0,0,5],[28,0,10,10],[5,0,5,5],[20,0,9,10]],
+["THE SURYAA NEW DELHI","Tripti","Active","Hotels",[5,0,10,0],[30,0,26,20],[10,0,10,10],[15,0,20,0],[20,0,0,0]],
+["The Terrace","Tripti","Active","PCL",[10,0,5,0],[15,0,10,10],[50,0,35,35],[0,0,0,0],[10,0,10,0]],
+["THE TURKEY PROJECT","Prerna","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[0,0,3,0],[0,0,5,0],[0,0,0,0]],
+["THE UMRAO","Rashi","Active","Hotels",[0,0,0,0],[7,0,5,5],[25,0,18,7],[15,0,20,3],[0,0,0,0]],
+["THE VILLAGE ROOFTOP","Tripti","Active","PCL",[0,0,0,0],[5,5,3,0],[14,16,8,5],[0,4,5,5],[10,15,5,5]],
+["THE WHITE BULL MG ENTERPRISE","Rashi","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[0,0,0,0],[10,0,5,5],[0,0,0,0]],
+["THE YELLOW CHILLI1","Pradeep","Active","B&R A",[0,15,0,0],[5,15,4,2],[15,50,7,4],[0,30,2,1],[18,13,5,3]],
+["THE YELLOW CHILLI2","Pradeep","Active","B&R A",[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+["Themis Barbeque House1","Pradeep","Active","Fine Dine",[0,0,0,0],[13,0,4,2],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+["Themis Barbeque House2","Samaksh","Active","Fine Dine",[0,0,0,0],[0,0,0,3],[8,5,6,3],[10,0,3,0],[8,0,2,4]],
+["TKS THE TRI KITCHENS","Prerna","Active","Fine Dine",[0,0,0,0],[15,0,10,0],[25,0,10,10],[25,0,0,0],[50,0,10,10]],
+["TOSCANO RED APPLE1","Tripti","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[10,10,10,0]],
+["TOSCANO RED APPLE2","Tripti","Active","Fine Dine",[0,3,3,2],[5,0,0,0],[2,8,1,0],[5,5,4,0],[5,5,0,0]],
+["TOWN HALL","Rashi","Active","PCL",[0,0,5,0],[20,0,5,5],[5,0,5,0],[0,0,0,0],[0,0,0,0]],
+["TOYROOM NINETY HOSPITALITY","Sreebrata","Active","Luxury PCL",[9,0,10,0],[20,0,10,0],[20,0,40,0],[10,0,10,0],[0,0,20,0]],
+["TRANZIT","Rashi","Active","PCL",[10,0,5,0],[3,0,3,8],[16,0,9,11],[10,0,5,5],[18,0,11,10]],
+["TRES LITE BITE","Pradeep","Active","PCL",[0,0,1,1],[0,0,2,0],[0,0,1,3],[0,0,0,0],[0,0,4,4]],
+["TRIPTI RESTT","Rashi","Active","B&R B",[0,0,0,0],[35,45,5,0],[60,55,10,0],[30,30,0,0],[30,50,8,0]],
+["TRUE BLUE CLASS ROOM","Pradeep","Active","B&R C",[22,23,2,0],[13,32,0,0],[33,36,2,0],[30,56,0,0],[53,46,0,0]],
+["TRUE BLUE RESTAURANT PAHAR GAN","Pradeep","Active","B&R A",[10,45,2,0],[20,70,0,0],[25,95,2,0],[20,80,4,0],[40,130,4,0]],
+["TUBATA","Pradeep","Active","PCL",[5,0,0,0],[5,0,5,0],[25,0,20,10],[0,0,0,0],[20,0,0,5]],
+["TUCASA/MAZI PRAGATI TOYS","Rashi","Active","FINE DINE",[5,0,0,0],[10,0,3,3],[15,0,3,3],[0,0,0,0],[10,0,5,5]],
+["TYPSY CROW","Rashi","Active","PCL",[5,20,0,3],[10,25,3,0],[25,50,8,8],[0,30,0,0],[5,60,10,0]],
+["ULTRA BARR TFS T3","Sreebrata","Active","Airport",[20,80,10,10],[80,130,50,30],[100,195,35,15],[0,25,10,0],[70,175,60,19]],
+["UNCOVER AVENUE EUTOPIA","Prerna","Active","Fine Dine",[22,0,0,0],[25,0,0,0],[47,0,25,10],[0,0,0,0],[20,0,15,12]],
+["UNCULTURED KONNECT","Prerna","Active","PCL",[5,0,8,4],[30,0,5,5],[0,0,5,5],[0,0,5,5],[10,0,5,5]],
+["UNDERDOGGS ACE HOSPITALITY","Sreebrata","Active","PCL",[30,15,0,0],[40,30,17,17],[110,37,29,20],[15,20,5,7],[60,38,66,16]],
+["Underpass Cafe Bar Courtyard","Prerna","Active","B&R C",[25,0,10,0],[25,0,10,0],[70,0,20,0],[0,0,0,0],[200,0,55,0]],
+["United Coffee House1","Tripti","Active","Fine Dine",[4,0,3,3],[0,0,0,0],[10,0,2,3],[0,0,0,0],[4,0,3,3]],
+["United Coffee House2","Samaksh","Active","Fine Dine",[10,0,5,5],[10,0,5,5],[10,0,5,5],[10,0,5,5],[20,0,8,3]],
+["United Coffee House Tagore Gar","Sreebrata","Active","Fine Dine",[4,0,3,3],[5,0,0,0],[5,0,0,0],[11,0,4,7],[5,5,0,0]],
+["UNLIMITED FOOD FACTORY","Pradeep","Active","B&R B",[0,5,2,0],[0,5,2,1],[0,14,2,0],[0,12,4,2],[0,20,2,1]],
+["UPGRADE KITCHEN & BAR ANSHIKANSH","Tripti","Active","PCL",[0,0,0,0],[0,0,0,0],[0,0,0,0],[15,10,5,5],[25,10,5,5]],
+["UPGRADE KITCHEN & BAR URBAN GALA","Tripti","Active","PCL",[0,5,0,0],[0,5,0,0],[0,0,5,5],[0,0,0,0],[0,0,0,0]],
+["UPSTAIRS BAR AND KITCHEN","Prerna","Active","Fine Dine",[0,20,5,5],[0,16,2,2],[0,20,1,0],[0,0,0,0],[0,15,14,6]],
+["UTOPIA RVN","Pradeep","Active","B&R A",[0,0,0,0],[5,0,3,0],[10,0,0,0],[10,10,0,0],[25,0,0,0]],
+["VASANT CONTINENTAL","Rashi","Active","Hotels",[0,0,0,0],[0,0,25,0],[30,0,0,0],[0,0,0,0],[0,0,0,0]],
+["VASANT VIHAR CLUB","Rashi","Active","Social Club",[0,0,0,0],[20,0,0,0],[40,0,40,0],[30,0,0,10],[40,0,0,0]],
+["VG BARS","Prerna","Active","B&R",[0,0,0,0],[0,0,0,0],[0,0,0,0],[5,20,1,1],[5,10,1,0]],
+["VIA BIANCA FARFALLE","Prerna","Active","Fine Dine",[0,0,0,0],[0,0,0,0],[2,0,2,2],[2,0,1,1],[4,0,2,2]],
+["Vietnom Yuvi Success","Tripti","Active","Fine Dine",[0,0,0,0],[4,0,3,4],[6,0,3,4],[2,0,0,0],[4,0,2,4]],
+["VILLAGE BAR EXCHANGE","Tripti","Active","PCL",[25,20,4,2],[20,16,5,4],[13,9,2,2],[18,8,0,0],[0,0,0,0]],
+["VIP RDX RESTO & BAR SOLITAIRE","Tripti","Active","B&R A",[0,12,0,0],[12,12,0,0],[18,30,0,0],[16,26,0,0],[24,40,0,0]],
+["Vivanta By Taj Ambassador","Samaksh","Active","Hotels",[0,0,0,0],[10,0,10,5],[25,0,20,10],[0,0,0,0],[0,0,0,0]],
+["Vivanta by Taj Dwarka","Prerna","Active","Hotels",[0,0,0,0],[35,0,0,0],[55,0,30,35],[0,0,0,0],[60,0,50,20]],
+["W VA BIEN NGH HOSPITALITIES","Pradeep","Active","PCL",[0,0,0,0],[0,0,0,0],[0,0,0,0],[20,0,7,3],[10,0,0,0]],
+["WAKAME DREAM DOVES","Prerna","Active","Fine Dine",[0,0,0,0],[10,0,10,10],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+["WARE HOUSE CAFE First Fiddle","Samaksh","Active","PCL",[0,20,20,10],[0,50,0,10],[90,40,50,30],[0,20,0,0],[35,65,25,15]],
+["WAVES RESTAURANT","Samaksh","Active","Fine Dine",[5,0,0,0],[5,0,0,0],[30,0,0,0],[7,0,0,0],[5,0,0,0]],
+["Welcome Restro And Bar","Pradeep","Active","PCL",[0,0,0,0],[15,30,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+["WELCOMHOTEL DWARKA","Prerna","Active","Hotels",[0,0,0,0],[0,0,0,0],[50,0,75,10],[0,0,0,0],[0,0,0,0]],
+["White Oak Restaurant","Pradeep","Active","B&R B",[0,0,0,0],[3,9,1,0],[5,20,3,0],[0,0,0,0],[0,0,0,0]],
+["WISKY WALLA ASHIANA TOWERS","Pradeep","Active","B&R B",[0,0,0,0],[0,0,0,0],[15,35,0,0],[10,5,0,0],[5,10,0,0]],
+["WOK IN THE CLOUDS GALORE","Rashi","Active","PCL",[5,0,0,0],[0,0,0,0],[20,10,5,5],[0,0,0,0],[0,5,0,0]],
+["WOK IN THE CLOUDS1","Rashi","Active","FINE DINE",[10,5,3,3],[15,10,3,3],[20,5,5,5],[0,0,0,0],[15,10,5,0]],
+["WOODAPPLE RESTAURANT","Pradeep","Active","PCL",[0,0,0,0],[4,6,0,0],[4,10,5,5],[5,6,0,0],[8,8,5,0]],
+["WORLD OF MY BAR","Samaksh","Active","B&R A",[0,0,0,0],[0,0,0,0],[0,0,35,0],[0,0,40,0],[0,0,0,0]],
+["WOS LAIDBACK CAFE WORLD OF SHALOM","Prerna","Active","PCL",[10,0,0,5],[10,0,0,0],[20,5,10,10],[30,10,10,20],[35,10,20,15]],
+["XERO COURTYARD KIAH","Pradeep","Active","B&R B",[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+["YES MINISTER","Samaksh","Active","PCL",[50,25,30,5],[30,50,25,25],[165,75,50,20],[0,0,0,10],[60,90,30,10]],
+["YETI THE HIMALAYAN KITCHEN","Tripti","Active","Fine Dine",[0,0,0,0],[0,0,2,2],[8,0,5,7],[0,0,0,0],[0,0,0,0]],
+["YO YO BAR","Rashi","Active","B&R A",[0,0,0,0],[65,35,0,0],[60,140,6,0],[0,85,8,7],[130,82,0,3]],
+["YOU MEE Lite Bite1","Prerna","Active","Fine Dine",[2,0,0,1],[4,0,2,2],[5,2,1,3],[0,0,0,0],[2,3,1,2]],
+["YOU MEE Lite Bite2","Rashi","Active","Fine Dine",[2,1,5,4],[0,0,0,2],[0,0,5,4],[0,0,0,0],[2,2,5,4]],
+["YUM PLUM","Prerna","Active","Fine Dine",[4,0,4,0],[0,0,0,0],[0,0,0,0],[4,0,3,3],[0,0,0,0]],
+["Zaffran Zaffran Rest","Prerna","Active","Fine Dine",[0,0,0,0],[0,0,2,0],[3,0,2,1],[0,0,0,0],[3,0,0,2]],
+["ZAIKA BAZAR RESTAURANT","Pradeep","Active","B&R A",[5,10,2,0],[7,21,3,0],[10,30,3,0],[5,15,0,0],[15,30,5,0]],
+["Zamaya & Amare","Tripti","Active","PCL",[0,0,5,0],[0,0,5,0],[45,0,35,0],[10,0,0,10],[55,0,55,15]],
+["ZAZA NOSH RESTAURANT","Prerna","Active","Fine Dine",[0,0,0,0],[5,0,0,2],[8,0,2,2],[7,0,2,2],[12,0,4,6]],
+["Zura Maati Cafe","Rashi","Active","Fine Dine",[3,0,3,3],[0,0,0,0],[15,0,3,3],[10,0,5,5],[10,0,3,3]],
+["ZURII AUM HOSPITALIT","Rashi","Active","Fine Dine",[10,0,0,0],[10,0,0,0],[35,0,0,0],[10,0,5,0],[20,5,0,0]]
+];
+
+function processData(raw) {
+  return raw.map(r => {
+    const name=r[0],rm=r[1],status=r[2],channel=r[3];
+    const months=r.slice(4);
+    const monthly=months.map(m=>({bud:m[0],mag:m[1],cor:m[2],hoe:m[3],total:m[0]+m[1]+m[2]+m[3]}));
+    const ytd={bud:0,mag:0,cor:0,hoe:0,total:0};
+    monthly.forEach(m=>{ytd.bud+=m.bud;ytd.mag+=m.mag;ytd.cor+=m.cor;ytd.hoe+=m.hoe;ytd.total+=m.total});
+    return {name,rm,status,channel,monthly,ytd};
+  });
+}
+
+const DATA = processData(RAW);
+
+function normalize(s){return s.toLowerCase().replace(/[^a-z0-9]/g,' ').replace(/\s+/g,' ').trim()}
+
+function search(q){
+  if(!q||q.length<2) return [];
+  const nq=normalize(q);
+  return DATA.filter(d=>normalize(d.name).includes(nq)).slice(0,20);
+}
+
+const input=document.getElementById('searchInput');
+const sugg=document.getElementById('suggestions');
+const main=document.getElementById('mainContent');
+let charts=[];
+
+function clearCharts(){charts.forEach(c=>{try{c.destroy()}catch(e){}});charts=[];}
+
+input.addEventListener('input',()=>{
+  const q=input.value.trim();
+  if(q.length<2){sugg.style.display='none';return;}
+  const results=search(q);
+  if(!results.length){sugg.style.display='none';return;}
+  sugg.innerHTML=results.map(d=>`<div class="suggestion-item" data-name="${d.name}"><strong>${d.name}</strong><span>${d.channel} · ${d.rm}</span></div>`).join('');
+  sugg.style.display='block';
+});
+
+sugg.addEventListener('click',e=>{
+  const item=e.target.closest('.suggestion-item');
+  if(!item)return;
+  const name=item.dataset.name;
+  const outlet=DATA.find(d=>d.name===name);
+  input.value=name;
+  sugg.style.display='none';
+  if(outlet)renderOutlet(outlet);
+});
+
+document.addEventListener('click',e=>{if(!e.target.closest('.search-wrap'))sugg.style.display='none';});
+
+input.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    const q=input.value.trim();
+    const results=search(q);
+    if(results.length===1){input.value=results[0].name;sugg.style.display='none';renderOutlet(results[0]);}
+  }
+});
+
+function statusBadge(s){
+  const map={'Active':'badge-active','Closed':'badge-closed','Billing Issue':'badge-billing','Temp Closed':'badge-temp','Inactive':'badge-inactive','UB Tieup':'badge-billing','Billing issue':'badge-billing'};
+  return `<span class="badge ${map[s]||'badge-inactive'}">${s}</span>`;
+}
+
+function calcTrend(monthly){
+  const active=monthly.filter(m=>m.total>0);
+  if(active.length<2)return 'flat';
+  const avg=t=>t.reduce((a,m)=>a+m.total,0)/t.length;
+  const first=active.slice(0,Math.ceil(active.length/2));
+  const last=active.slice(Math.floor(active.length/2));
+  const diff=avg(last)-avg(first);
+  if(diff>0)return 'up';if(diff<0)return 'down';return 'flat';
+}
+
+function forecast(monthly){
+  const totals=monthly.map(m=>m.total);
+  const nonzero=totals.filter(v=>v>0);
+  if(!nonzero.length)return 0;
+  // Weighted average - recent months get more weight
+  const weights=[1,1.5,2,2.5,3];
+  let wsum=0,wval=0;
+  totals.forEach((v,i)=>{wsum+=weights[i];wval+=v*weights[i];});
+  return Math.round(wval/wsum);
+}
+
+function skuForecast(monthly,key){
+  const vals=monthly.map(m=>m[key]);
+  const nonzero=vals.filter(v=>v>0);
+  if(!nonzero.length)return 0;
+  const weights=[1,1.5,2,2.5,3];
+  let wsum=0,wval=0;
+  vals.forEach((v,i)=>{wsum+=weights[i];wval+=v*weights[i];});
+  return Math.round(wval/wsum);
+}
+
+function renderOutlet(d){
+  clearCharts();
+  const trend=calcTrend(d.monthly);
+  const fcTotal=forecast(d.monthly);
+  const fcBud=skuForecast(d.monthly,'bud');
+  const fcMag=skuForecast(d.monthly,'mag');
+  const fcCor=skuForecast(d.monthly,'cor');
+  const fcHoe=skuForecast(d.monthly,'hoe');
+
+  const trendIcon=trend==='up'?'▲':trend==='down'?'▼':'—';
+  const trendBadge=`<span class="trend-badge trend-${trend}">${trendIcon} ${trend==='up'?'Growing':trend==='down'?'Declining':'Stable'}</span>`;
+
+  const bestMonth=d.monthly.reduce((b,m,i)=>m.total>b.val?{val:m.total,idx:i}:b,{val:0,idx:0});
+  const bestSku=[
+    {k:'Bud',v:d.ytd.bud},{k:'Magnum',v:d.ytd.mag},{k:'Corona',v:d.ytd.cor},{k:'Hoegaarden',v:d.ytd.hoe}
+  ].sort((a,b)=>b.v-a.v)[0];
+
+  const monthLabels=MONTHS;
+  const budData=d.monthly.map(m=>m.bud);
+  const magData=d.monthly.map(m=>m.mag);
+  const corData=d.monthly.map(m=>m.cor);
+  const hoeData=d.monthly.map(m=>m.hoe);
+  const totalData=d.monthly.map(m=>m.total);
+
+  const forecastMonths=[...MONTHS,'Jun (F)'];
+  const forecastData=[...totalData, fcTotal];
+
+  main.innerHTML=`
+    <div class="outlet-header">
+      <div class="outlet-name">${d.name}</div>
+      <div class="outlet-meta">
+        ${statusBadge(d.status)}
+        <span class="badge badge-channel">${d.channel}</span>
+        <span class="badge badge-rm">RM: ${d.rm}</span>
+      </div>
+    </div>
+
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">YTD Total</div>
+        <div class="kpi-value">${d.ytd.total.toLocaleString()}</div>
+        <div class="kpi-sub">cases Jan–May 2026${trendBadge}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Jun Forecast</div>
+        <div class="kpi-value">${fcTotal.toLocaleString()}</div>
+        <div class="kpi-sub">weighted avg estimate</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Best Month</div>
+        <div class="kpi-value">${bestMonth.val}</div>
+        <div class="kpi-sub">${MONTHS[bestMonth.idx]} · ${bestMonth.val} cases</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Top SKU</div>
+        <div class="kpi-value">${bestSku.v}</div>
+        <div class="kpi-sub">${bestSku.k} · YTD cases</div>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">Monthly volume with June forecast</div>
+        <div class="chart-sub">Total cases per month. June is estimated using a weighted trend.</div>
+        <div style="position:relative;height:220px;">
+          <canvas id="c1" role="img" aria-label="Monthly total volume Jan to May with June forecast. Total cases: Jan ${totalData[0]}, Feb ${totalData[1]}, Mar ${totalData[2]}, Apr ${totalData[3]}, May ${totalData[4]}, Jun forecast ${fcTotal}."></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">SKU breakdown by month</div>
+        <div class="chart-sub">Stacked view of Bud, Magnum, Corona and Hoegaarden volumes.</div>
+        <div class="legend">
+          ${SKUS.map((s,i)=>`<span class="legend-item"><span class="legend-dot" style="background:${SKU_COLORS[i]}"></span>${s}</span>`).join('')}
+        </div>
+        <div style="position:relative;height:240px;">
+          <canvas id="c2" role="img" aria-label="Stacked SKU breakdown by month for Budweiser, Magnum, Corona and Hoegaarden."></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">SKU share YTD</div>
+        <div class="chart-sub">Proportion of total cases by product year-to-date.</div>
+        <div class="legend">
+          ${SKUS.map((s,i)=>`<span class="legend-item"><span class="legend-dot" style="background:${SKU_COLORS[i]}"></span>${s}: ${d.ytd[['bud','mag','cor','hoe'][i]]} cases</span>`).join('')}
+        </div>
+        <div style="position:relative;height:220px;">
+          <canvas id="c3" role="img" aria-label="Donut chart showing YTD share: Bud ${d.ytd.bud}, Magnum ${d.ytd.mag}, Corona ${d.ytd.cor}, Hoegaarden ${d.ytd.hoe}."></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">SKU forecast for June</div>
+        <div class="chart-sub">Estimated cases per SKU next month based on weighted trend.</div>
+        <div style="position:relative;height:200px;">
+          <canvas id="c4" role="img" aria-label="Forecasted June cases per SKU: Bud ${fcBud}, Magnum ${fcMag}, Corona ${fcCor}, Hoegaarden ${fcHoe}."></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card" style="margin-top:16px;">
+      <div class="chart-title">Monthly detail</div>
+      <div class="chart-sub">Case-level breakdown per SKU per month</div>
+      <table class="monthly-table">
+        <thead><tr><th>Month</th><th>Bud</th><th>Magnum</th><th>Corona</th><th>Hoegaarden</th><th>Total</th></tr></thead>
+        <tbody>
+          ${d.monthly.map((m,i)=>`<tr><td>${MONTHS[i]}</td><td>${m.bud}</td><td>${m.mag}</td><td>${m.cor}</td><td>${m.hoe}</td><td>${m.total}</td></tr>`).join('')}
+          <tr style="font-weight:600;background:#f9f9f7"><td>YTD</td><td>${d.ytd.bud}</td><td>${d.ytd.mag}</td><td>${d.ytd.cor}</td><td>${d.ytd.hoe}</td><td>${d.ytd.total}</td></tr>
+          <tr style="background:#f0f7ff"><td>Jun Forecast</td><td>${fcBud}</td><td>${fcMag}</td><td>${fcCor}</td><td>${fcHoe}</td><td>${fcTotal}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  // Chart 1: Total monthly + forecast
+  const c1=new Chart(document.getElementById('c1'),{
+    type:'bar',
+    data:{
+      labels:forecastMonths,
+      datasets:[{
+        label:'Total',
+        data:forecastData,
+        backgroundColor:forecastData.map((_,i)=>i===5?'rgba(42,120,214,0.4)':'#2a78d6'),
+        borderColor:forecastData.map((_,i)=>i===5?'#2a78d6':'#2a78d6'),
+        borderWidth:forecastData.map((_,i)=>i===5?2:0),
+        borderDash:[[5,5]],
+        borderRadius:4
+      }]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{autoSkip:false}},y:{beginAtZero:true,ticks:{precision:0}}}}
+  });
+  charts.push(c1);
+
+  // Chart 2: Stacked SKU by month
+  const c2=new Chart(document.getElementById('c2'),{
+    type:'bar',
+    data:{
+      labels:MONTHS,
+      datasets:[
+        {label:'Bud',data:budData,backgroundColor:'#2a78d6',borderRadius:2,stack:'s'},
+        {label:'Magnum',data:magData,backgroundColor:'#1baf7a',borderRadius:2,stack:'s'},
+        {label:'Corona',data:corData,backgroundColor:'#eda100',borderRadius:2,stack:'s'},
+        {label:'Hoegaarden',data:hoeData,backgroundColor:'#e34948',borderRadius:2,stack:'s'}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{stacked:true,ticks:{autoSkip:false}},y:{stacked:true,beginAtZero:true,ticks:{precision:0}}}}
+  });
+  charts.push(c2);
+
+  // Chart 3: Donut YTD share
+  const skuTotals=[d.ytd.bud,d.ytd.mag,d.ytd.cor,d.ytd.hoe];
+  const c3=new Chart(document.getElementById('c3'),{
+    type:'doughnut',
+    data:{
+      labels:SKUS,
+      datasets:[{data:skuTotals,backgroundColor:SKU_COLORS,borderWidth:2,borderColor:'#fff'}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'65%'}
+  });
+  charts.push(c3);
+
+  // Chart 4: Forecast bar by SKU
+  const c4=new Chart(document.getElementById('c4'),{
+    type:'bar',
+    data:{
+      labels:SKUS,
+      datasets:[{label:'Forecast',data:[fcBud,fcMag,fcCor,fcHoe],backgroundColor:SKU_COLORS,borderRadius:4}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}
+  });
+  charts.push(c4);
+}
+</script>
+</body>
+</html>
